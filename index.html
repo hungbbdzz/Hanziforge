@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HanziForge — Interactive Chinese Character Learning Platform</title>
+  <meta name="description" content="Nền tảng học tiếng Trung tương tác qua cấu tạo bộ thủ Hán tự. Khám phá 214 bộ thủ Khang Hy, ghép chữ theo không gian 2D, luyện nét và tra từ điển Việt.">
+  <meta name="keywords" content="học tiếng Trung, bộ thủ Hán tự, Hanzi, Chữ Hán, âm Hán Việt, HSK">
+  <meta name="author" content="HanziForge — VKU AI Product Development">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- =====================================================================
+       APP HEADER
+       ===================================================================== -->
+  <header class="app-header" id="app-header">
+    <div class="header-container">
+
+      <!-- Brand -->
+      <a href="#" class="brand" title="HanziForge — Nền tảng học chữ Hán qua bộ thủ">
+        <div class="brand-seal">漢</div>
+        <div class="brand-text">
+          <h1>HanziForge</h1>
+          <p>Interactive Character Platform</p>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" role="tablist" aria-label="App sections">
+        <button class="nav-tab-btn active" data-tab="builder" role="tab"
+                id="tab-builder" aria-selected="true" aria-controls="section-builder">
+          <span>⚒️ Không Gian Ghép Chữ</span>
+          <span class="badge-pill">Core</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="radicals" role="tab"
+                id="tab-radicals" aria-selected="false" aria-controls="section-radicals">
+          <span>📖 214 Bộ Thủ Khang Hy</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="progress" role="tab"
+                id="tab-progress" aria-selected="false" aria-controls="section-progress">
+          <span>📊 Tiến Độ & Thành Tích</span>
+        </button>
+      </nav>
+
+      <!-- User Stats Bar -->
+      <div class="user-stats-bar">
+        <div class="stat-pill streak" title="Chuỗi ngày học liên tục">
+          <span>🔥</span>
+          <span id="header-streak-days">1 ngày</span>
+        </div>
+        <div class="stat-pill xp-pill" title="Điểm kinh nghiệm">
+          <span>⭐</span>
+          <span id="header-xp-val">0 XP</span>
+        </div>
+        <div class="stat-pill level-pill" id="header-level-badge" title="Cấp độ hiện tại">
+          Cấp 1
+        </div>
+        <button class="script-toggle-btn" id="btn-toggle-script"
+                title="Chuyển đổi Giản thể / Phồn thể" aria-label="Toggle script">
+          🇨🇳 Giản thể
+        </button>
+        <button class="sound-toggle-btn" id="btn-toggle-sound"
+                title="Bật/Tắt âm thanh" aria-label="Toggle sound">
+          🔊
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       MAIN APP
+       ===================================================================== -->
+  <main class="main-wrapper" role="main">
+
+    <!-- =================================================================
+         SECTION 1: BUILDER — 2D Spatial Canvas
+         ================================================================= -->
+    <section class="view-section active" id="section-builder"
+             role="tabpanel" aria-labelledby="tab-builder">
+
+      <div class="section-headline">
+        <div class="section-title-wrap">
+          <h2><span class="hanzi-decor">造字</span> Không Gian Ghép Chữ 2D — Spatial Canvas</h2>
+          <p>Kéo thả tự do các bộ thủ lên khung Tianzige. Hệ thống tự nhận diện tọa độ không gian
+            (Trái–Phải, Trên–Dưới, Bao bọc, Kim tự tháp) và tự động dung hợp thành chữ Hán!</p>
+        </div>
+        <div class="headline-actions">
+          <button class="btn-ghost" id="btn-open-codex" title="Mở sách công thức">
+            📜 Sách Công Thức
+          </button>
+          <button class="btn-ghost" id="btn-save" title="Lưu tiến độ">
+            💾 Lưu
+          </button>
+        </div>
+      </div>
+
+      <!-- 3-Column Forge Layout -->
+      <div class="spatial-forge-layout">
+
+        <!-- LEFT: Palette / Inventory -->
+        <div class="palette-panel-card">
+          <div class="palette-card-header">
+            <div class="palette-header-row">
+              <span class="panel-label">🧩 Bảng Bộ Thủ</span>
+              <span class="count-badge" id="palette-count">214</span>
+            </div>
+            <!-- Palette Filter Tabs -->
+            <div class="palette-filter-tabs" id="palette-filter-tabs" role="tablist">
+              <button class="filter-tab-btn active" data-tab="radicals" role="tab">Bộ Thủ</button>
+              <button class="filter-tab-btn" data-tab="crafted" role="tab">
+                ⭐ Đã Ghép
+                <span class="synergy-badge" id="crafted-count">0</span>
+              </button>
+              <button class="filter-tab-btn" data-tab="synergy" role="tab">
+                ✨ Hợp Lệ
+                <span class="synergy-badge" id="synergy-count">0</span>
+              </button>
+            </div>
+            <!-- Search within palette -->
+            <input type="text" class="palette-search" id="palette-search"
+                   placeholder="🔍 Tìm bộ thủ..." aria-label="Tìm bộ thủ">
+            <!-- Stroke filter chips -->
+            <div class="stroke-chips" id="stroke-chips">
+              <button class="chip active" data-strokes="all">Tất cả</button>
+              <button class="chip" data-strokes="1-2">1–2 nét</button>
+              <button class="chip" data-strokes="3">3 nét</button>
+              <button class="chip" data-strokes="4">4 nét</button>
+              <button class="chip" data-strokes="5+">5+ nét</button>
+            </div>
+          </div>
+          <!-- Token Grid -->
+          <div class="palette-tokens" id="palette-tokens" role="list"
+               aria-label="Danh sách bộ thủ">
+            <div class="state-loading" id="palette-loading">
+              <div class="loading-spinner"></div>
+              <p>Đang tải 214 bộ thủ Khang Hy...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER: Tianzige Canvas -->
+        <div class="canvas-panel-card">
+          <div class="canvas-header-row">
+            <span class="panel-label">🏮 Khung Tianzige</span>
+            <div class="canvas-meta" id="canvas-meta">
+              <span class="meta-chip" id="canvas-layout-label">— Chờ ghép —</span>
+            </div>
+          </div>
+
+          <!-- The Canvas -->
+          <div class="canvas-tianzige" id="canvas-tianzige"
+               role="region" aria-label="Canvas ghép chữ">
+            <!-- Tianzige grid lines -->
+            <div class="tianzige-grid" aria-hidden="true">
+              <div class="grid-line grid-v"></div>
+              <div class="grid-line grid-h"></div>
+              <div class="grid-line grid-diag-1"></div>
+              <div class="grid-line grid-diag-2"></div>
+            </div>
+            <!-- Drop zone & tokens rendered by JS -->
+            <div class="canvas-drop-zone" id="canvas-drop-zone"
+                 role="region" aria-label="Vùng thả bộ thủ">
+              <div class="canvas-hint" id="canvas-hint">
+                <span class="hint-hanzi">拖</span>
+                <p>Kéo bộ thủ vào đây</p>
+                <span class="hint-sub">Có thể thả 2–3 bộ thủ để ghép</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Bar -->
+          <div class="canvas-action-bar">
+            <button class="btn-action btn-undo" id="btn-undo" disabled title="Hoàn tác">
+              ↩ Hoàn tác
+            </button>
+            <button class="btn-action btn-clear" id="btn-clear-canvas" title="Xóa canvas">
+              🗑️ Xóa tất cả
+            </button>
+            <button class="btn-action btn-fuse" id="btn-fuse" disabled
+                    title="Dung hợp thành chữ Hán">
+              ✨ Dung Hợp
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Codex / Result Panel -->
+        <div class="codex-panel-card">
+          <div class="codex-header-row">
+            <span class="panel-label">📜 Kết Quả Ghép</span>
+          </div>
+          <!-- Result display -->
+          <div class="codex-result-area" id="codex-result-area">
+            <div class="codex-empty-state">
+              <span class="codex-empty-icon">🔮</span>
+              <p>Ghép thành công sẽ hiển thị kết quả tại đây</p>
+            </div>
+          </div>
+          <!-- Recent fusions history -->
+          <div class="codex-history">
+            <div class="codex-history-label">Lịch sử ghép gần đây</div>
+            <div class="codex-history-list" id="codex-history-list">
+              <p class="history-empty">Chưa có lịch sử</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================
+         SECTION 2: RADICALS — 214 KangXi Browser
+         ================================================================= -->
+    <section class="view-section" id="section-radicals"
+             role="tabpanel" aria-labelledby="tab-radicals">
+
+      <div class="section-headline">
+        <div class="section-title-wrap">
+          <h2><span class="hanzi-decor">部首</span> 214 Bộ Thủ Khang Hy</h2>
+          <p>Toàn bộ 214 bộ thủ chuẩn Unicode với âm Hán Việt, Pinyin, nghĩa tiếng Việt và
+            animation nét chữ HanziWriter.</p>
+        </div>
+        <div class="headline-actions">
+          <span class="total-label">Hiển thị: <strong id="radicals-shown">214</strong> / 214</span>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <input type="text" id="radical-search" class="search-input"
+               placeholder="🔍 Tìm bộ thủ (Hán, Pinyin, Hán Việt, nghĩa)..."
+               aria-label="Tìm kiếm bộ thủ">
+        <div class="stroke-filter-row">
+          <span class="filter-label">Số nét:</span>
+          <div class="stroke-filter" id="stroke-filter" role="group" aria-label="Lọc theo số nét">
+            <button class="filter-btn active" data-strokes="all">Tất cả</button>
+            <button class="filter-btn" data-strokes="1">1</button>
+            <button class="filter-btn" data-strokes="2">2</button>
+            <button class="filter-btn" data-strokes="3">3</button>
+            <button class="filter-btn" data-strokes="4">4</button>
+            <button class="filter-btn" data-strokes="5+">5+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radicals Grid -->
+      <div class="radicals-grid" id="radicals-grid" role="list"
+           aria-label="Lưới 214 bộ thủ Khang Hy">
+        <div class="state-loading">
+          <div class="loading-spinner"></div>
+          <p>Đang tải dữ liệu bộ thủ...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================
+         SECTION 3: PROGRESS — XP & Achievements
+         ================================================================= -->
+    <section class="view-section" id="section-progress"
+             role="tabpanel" aria-labelledby="tab-progress">
+
+      <div class="section-headline">
+        <div class="section-title-wrap">
+          <h2>📊 Tiến Độ & Thành Tích</h2>
+          <p>Theo dõi hành trình học chữ Hán — chuỗi ngày, XP và các chữ đã khai phá.</p>
+        </div>
+        <div class="headline-actions">
+          <button class="btn-ghost" id="btn-export-save" title="Xuất file lưu">
+            📤 Xuất dữ liệu
+          </button>
+          <button class="btn-ghost" id="btn-import-save" title="Nhập file lưu">
+            📥 Nhập dữ liệu
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="progress-stats-grid">
+        <div class="stat-card streak-card">
+          <div class="stat-card-icon">🔥</div>
+          <div class="stat-card-value" id="stat-streak">1</div>
+          <div class="stat-card-label">Ngày liên tiếp</div>
+          <div class="stat-card-sub">Chuỗi tốt nhất: <span id="stat-best-streak">1</span></div>
+        </div>
+        <div class="stat-card xp-card">
+          <div class="stat-card-icon">⭐</div>
+          <div class="stat-card-value" id="stat-xp">0</div>
+          <div class="stat-card-label">Tổng XP</div>
+          <div class="stat-card-sub">Cấp tiếp theo: <span id="stat-xp-next">100</span> XP</div>
+        </div>
+        <div class="stat-card level-card">
+          <div class="stat-card-icon">🏆</div>
+          <div class="stat-card-value" id="stat-level">1</div>
+          <div class="stat-card-label">Cấp độ</div>
+          <div class="stat-card-sub">Học giả Hán tự</div>
+        </div>
+        <div class="stat-card unlock-card">
+          <div class="stat-card-icon">📚</div>
+          <div class="stat-card-value" id="stat-unlocked">0</div>
+          <div class="stat-card-label">Chữ đã học</div>
+          <div class="stat-card-sub">/ 9,574 chữ Hán</div>
+        </div>
+        <div class="stat-card recipe-card">
+          <div class="stat-card-icon">⚗️</div>
+          <div class="stat-card-value" id="stat-recipes">0</div>
+          <div class="stat-card-label">Công thức đã ghép</div>
+          <div class="stat-card-sub">/ 8,660 công thức</div>
+        </div>
+        <div class="stat-card accuracy-card">
+          <div class="stat-card-icon">🎯</div>
+          <div class="stat-card-value" id="stat-accuracy">—</div>
+          <div class="stat-card-label">Độ chính xác</div>
+          <div class="stat-card-sub">Luyện nét viết</div>
+        </div>
+      </div>
+
+      <!-- XP Progress Bar -->
+      <div class="xp-bar-section">
+        <div class="xp-bar-label">
+          <span>Cấp <span id="xp-bar-level">1</span></span>
+          <span><span id="xp-bar-current">0</span> / <span id="xp-bar-max">100</span> XP</span>
+        </div>
+        <div class="xp-bar-track">
+          <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Unlocked Characters Grid (placeholder) -->
+      <div class="unlocked-section">
+        <h3 class="subsection-title">📖 Chữ Đã Khai Phá</h3>
+        <div class="unlocked-grid" id="unlocked-grid">
+          <div class="unlocked-empty">
+            <span>🌱</span>
+            <p>Bắt đầu ghép chữ để khai phá Hanzi!</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       MODALS
+       ===================================================================== -->
+
+  <!-- Character Detail Modal -->
+  <div class="modal-overlay" id="modal-char-detail" role="dialog"
+       aria-modal="true" aria-labelledby="modal-char-title" hidden>
+    <div class="modal-panel modal-char-panel">
+      <button class="modal-close-btn" id="btn-close-char-modal" aria-label="Đóng">✕</button>
+
+      <div class="modal-char-header">
+        <div class="modal-char-display">
+          <div class="char-hanziwriter-wrap" id="char-hw-target"></div>
+        </div>
+        <div class="modal-char-meta">
+          <h2 id="modal-char-title" class="modal-char-sino">—</h2>
+          <p class="modal-char-pinyin" id="modal-char-pinyin">—</p>
+          <p class="modal-char-meaning" id="modal-char-meaning">—</p>
+          <div class="modal-char-tags" id="modal-char-tags"></div>
+        </div>
+        <button class="btn-audio" id="btn-pronounce" title="Phát âm">
+          🔊 Phát âm
+        </button>
+      </div>
+
+      <!-- Tabs inside modal -->
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-mtab="vocab">📝 Từ vựng</button>
+        <button class="modal-tab-btn" data-mtab="sentences">💬 Ví dụ</button>
+        <button class="modal-tab-btn" data-mtab="stroke">✏️ Luyện nét</button>
+        <button class="modal-tab-btn" data-mtab="etymology">🔍 Từ nguyên</button>
+      </div>
+
+      <div class="modal-tab-content" id="modal-tab-content">
+        <div class="modal-content-placeholder">
+          <div class="loading-spinner"></div>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Codex / Recipe Book Modal -->
+  <div class="modal-overlay" id="modal-codex" role="dialog"
+       aria-modal="true" aria-labelledby="modal-codex-title" hidden>
+    <div class="modal-panel modal-codex-panel">
+      <button class="modal-close-btn" id="btn-close-codex" aria-label="Đóng">✕</button>
+      <h2 id="modal-codex-title">📜 Sách Công Thức Ghép Chữ</h2>
+      <p class="modal-subtitle">8,660 công thức từ 214 bộ thủ Khang Hy</p>
+      <input type="text" class="search-input" id="codex-search"
+             placeholder="🔍 Tìm công thức (chữ, bộ thủ)...">
+      <div class="codex-recipes-grid" id="codex-recipes-grid">
+        <div class="state-loading">
+          <div class="loading-spinner"></div>
+          <p>Đang tải công thức...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SCRIPTS
+       Week 1:  (none — static HTML only)
+       Week 2:  js/app.js added
+       Week 3:  js/radicals.js added
+       Week 4:  js/builder.js added
+       Week 7:  js/state.js added
+       Week 8:  data/hanzi_data_runtime.js added
+       Week 11: js/audio.js added
+       Week 12: js/fps_meter.js added
+       ===================================================================== -->
+  <script src="js/app.js"></script>
+  <script src="js/radicals.js"></script>
+  <script src="js/builder.js"></script>
+
+</body>
+</html>
