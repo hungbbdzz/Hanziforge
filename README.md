@@ -57,10 +57,10 @@ Dự án tuân theo tiêu chuẩn **Zero-Build, Pure Vanilla Web Architecture**:
 | **Phụ thuộc bên ngoài** | **0 dependencies** (Không cần `npm install` hay Webpack/Vite) | Chạy ngay lập tức trên mọi máy tính mà không cần cài đặt môi trường phức tạp. |
 
 > 📌 **Về câu hỏi: "Dự án này có cần dùng Framework (React, Vue, Next.js...) không?"**  
-> **Câu trả lời là KHÔNG.** Dự án tham chiếu (`hanziforge-ref`) cũng được xây dựng hoàn toàn bằng **Pure Vanilla HTML5/CSS3/JavaScript**. Với bài toán kéo thả 2D Canvas thời gian thực và nạp tập dữ liệu từ điển lớn, việc dùng Vanilla JS giúp:
-> 1. Hiệu năng tính toán vị trí và render cực nhanh, không có độ trễ do Virtual DOM re-render.
+> **Câu trả lời là KHÔNG.** Dự án được thiết kế hoàn toàn bằng **Pure Vanilla HTML5/CSS3/JavaScript**. Với bài toán kéo thả 2D Canvas thời gian thực và nạp tập dữ liệu từ điển lớn, việc dùng Vanilla JS mang lại:
+> 1. Hiệu năng tính toán vị trí và render cực nhanh (60–144 FPS), không có độ trễ do Virtual DOM re-render.
 > 2. Dễ dàng nạp các file database dung lượng lớn vào RAM runtime dưới dạng object toàn cục.
-> 3. Khả năng đóng gói cực kỳ gọn nhẹ, mở là chạy ngay.
+> 3. Khả năng đóng gói cực kỳ gọn nhẹ, mở là chạy ngay không cần cài đặt môi trường.
 
 ---
 
@@ -138,8 +138,7 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 
 ## 📅 Lộ Trình Phát Triển Theo Tuần (Weekly Milestones & Git Commits)
 
-> 💡 **Triết lý phát triển:** Dự án **KHÔNG** sao chép ồ ạt toàn bộ mã nguồn ngay từ đầu mà được phát triển **cuốn chiếu theo từng tuần học (Weekly Agile Iterations)**.  
-> Thư mục `hanziforge-ref` là **bản kiến trúc chuẩn hoàn thiện (Target Reference Architecture)** mà đồ án sẽ từng bước đạt tới sau 2–3 tuần tiếp theo. Mỗi tuần học đều có mục tiêu nghiên cứu cụ thể, mã nguồn kiểm thử tương ứng và được commit lên Git định kỳ.
+> 💡 **Triết lý phát triển:** Dự án được phát triển **cuốn chiếu theo từng tuần học (Weekly Agile Iterations)**. Mỗi tuần học đều có mục tiêu nghiên cứu cụ thể, bài tập thực hành tương ứng và được cam kết mã nguồn lên Git định kỳ để thể hiện rõ quá trình hoàn thiện sản phẩm.
 
 | Tuần học | Ngày | Nội dung & Chương trình học | Git Commit Milestone | Trạng thái |
 |:---:|:---:|---|---|:---:|
@@ -153,11 +152,11 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 | **Tuần 8** | 06/10/2026 | **Ch.6: Big Data Pipeline** — Nạp runtime 8,660 công thức & 9,574 chữ Hán | `feat: full runtime data integration` | ⏳ Sắp tới |
 | **Tuần 11** | 27/10/2026 | **Ch.8: Đa phương tiện** — Web Speech API phát âm giọng đọc bản ngữ | `feat: add text-to-speech audio` | ⏳ Sắp tới |
 | **Tuần 12** | 03/11/2026 | **Ch.9: Tối ưu hiệu năng** — Đo kiểm 60-144 FPS HUD & PWA offline | `perf: optimize rendering, add pwa` | ⏳ Sắp tới |
-| **Tuần 13** | 10/11/2026 | **Nghiệm thu cuối kỳ** — Hoàn thiện toàn bộ sản phẩm theo chuẩn `ref` | `release: finalize hanziforge platform` | ⏳ Đích đến |
+| **Tuần 13** | 10/11/2026 | **Nghiệm thu cuối kỳ** — Hoàn thiện toàn bộ sản phẩm hoàn chỉnh | `release: finalize hanziforge platform` | ⏳ Đích đến |
 
 ---
 
-## 🔮 Kế hoạch Giai đoạn Kế tiếp (Bước đệm tới bản `ref`)
+## 🔮 Kế hoạch Giai đoạn Kế tiếp
 
 Các tính năng chưa tới tuần học sẽ được giữ ở trạng thái **Coming Soon** trên giao diện:
 1. **Tuần 5:** Tích hợp `HanziWriter` vào modal chi tiết chữ để hiển thị thứ tự nét viết động.

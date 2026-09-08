@@ -143,7 +143,7 @@ Học chữ Hán theo phương pháp truyền thống (ghi nhớ máy móc từn
 
 ### 4.1 Core Features (MVP) & Weekly Implementation Scope
 
-> 📌 **Quy trình triển khai:** Dự án được thực hiện theo tiến độ môn học Chuyên đề 4 (VKU 2026), cam kết mã nguồn theo từng tuần. Thư mục `hanziforge-ref` đóng vai trò là bản kiến trúc tham chiếu hoàn thiện (Target Architecture) sẽ dần đạt tới sau các tuần tiếp theo. Các tính năng chưa đến tuần thực hiện được thể hiện dưới dạng placeholder `Coming Soon` trên giao diện.
+> 📌 **Quy trình triển khai:** Dự án được thực hiện theo tiến độ môn học Chuyên đề 4 (VKU 2026), cam kết mã nguồn theo từng tuần. Mỗi tuần học tương ứng với một mốc tính năng và commit lên Git. Các tính năng chưa đến tuần thực hiện được thể hiện dưới dạng placeholder `Coming Soon` trên giao diện.
 
 | Feature | Module | Status |
 |---------|--------|--------|
