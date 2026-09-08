@@ -103,19 +103,20 @@
           <div class="palette-card-header">
             <div class="palette-header-row">
               <span class="panel-label">🧩 Bảng Bộ Thủ</span>
-              <span class="count-badge" id="palette-count">214</span>
+              <span class="count-badge" id="palette-count">20</span>
             </div>
             <!-- Palette Filter Tabs -->
             <div class="palette-filter-tabs" id="palette-filter-tabs" role="tablist">
-              <button class="filter-tab-btn active" data-tab="radicals" role="tab">Bộ Thủ</button>
-              <button class="filter-tab-btn" data-tab="crafted" role="tab">
+              <button class="filter-tab-btn active" data-tab="demo" role="tab" title="Chỉ hiện các bộ thủ có thể ghép trong bản demo">✨ Ghép Được</button>
+              <button class="filter-tab-btn" data-tab="crafted" role="tab" title="Các chữ đã ghép thành công">
                 ⭐ Đã Ghép
                 <span class="synergy-badge" id="crafted-count">0</span>
               </button>
-              <button class="filter-tab-btn" data-tab="synergy" role="tab">
-                ✨ Hợp Lệ
+              <button class="filter-tab-btn" data-tab="synergy" role="tab" title="Chỉ hiện các bộ thủ ghép được với thẻ đang có trên bàn">
+                ⚡ Hợp Lệ
                 <span class="synergy-badge" id="synergy-count">0</span>
               </button>
+              <button class="filter-tab-btn" data-tab="all" role="tab" title="Xem tất cả bộ thủ Khang Hy">Tất Cả</button>
             </div>
             <!-- Search within palette -->
             <input type="text" class="palette-search" id="palette-search"
@@ -134,7 +135,7 @@
                aria-label="Danh sách bộ thủ">
             <div class="state-loading" id="palette-loading">
               <div class="loading-spinner"></div>
-              <p>Đang tải 214 bộ thủ Khang Hy...</p>
+              <p>Đang tải bộ thủ khả dụng...</p>
             </div>
           </div>
         </div>
@@ -388,7 +389,7 @@
     <div class="modal-panel modal-codex-panel">
       <button class="modal-close-btn" id="btn-close-codex" aria-label="Đóng">✕</button>
       <h2 id="modal-codex-title">📜 Sách Công Thức Ghép Chữ</h2>
-      <p class="modal-subtitle">8,660 công thức từ 214 bộ thủ Khang Hy</p>
+      <p class="modal-subtitle">Danh mục công thức ghép chữ Hán từ bộ thủ (Bản thử nghiệm)</p>
       <input type="text" class="search-input" id="codex-search"
              placeholder="🔍 Tìm công thức (chữ, bộ thủ)...">
       <div class="codex-recipes-grid" id="codex-recipes-grid">

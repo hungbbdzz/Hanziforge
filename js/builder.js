@@ -135,6 +135,7 @@
     if (fuseBtn)  fuseBtn.disabled  = tokens.length < 2;
     if (undoBtn)  undoBtn.disabled  = tokens.length === 0;
     updateLayoutLabel();
+    updateSynergy();
   }
 
   function updateLayoutLabel() {
@@ -142,11 +143,53 @@
     if (tokens.length === 0) { layoutLabel.textContent = '— Chờ ghép —'; return; }
     if (tokens.length === 1) { layoutLabel.textContent = 'Kéo thêm 1–2 bộ thủ'; return; }
 
-    // Week 3: simple axis detection preview (Week 4 will be the full SpatialGeometry engine)
     const [a, b] = tokens;
     const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
     const layout = dx > dy ? '⿰ Trái–Phải' : '⿱ Trên–Dưới';
     layoutLabel.textContent = tokens.length === 3 ? '3 bộ thủ — ⿲/⿳/品' : layout;
+  }
+
+  // ── Synergy Calculation ───────────────────────────────────────────────────
+  function updateSynergy() {
+    const placed = tokens.map(t => t.char);
+    const synergySet = new Set();
+
+    if (placed.length === 1) {
+      const c1 = placed[0];
+      for (const key of Object.keys(DEMO_RECIPES)) {
+        const parts = key.split('+');
+        if (parts.length === 2) {
+          if (parts[0] === c1) synergySet.add(parts[1]);
+          else if (parts[1] === c1) synergySet.add(parts[0]);
+        } else if (parts.length === 3) {
+          const idx = parts.indexOf(c1);
+          if (idx !== -1) {
+            parts.forEach((p, i) => { if (i !== idx) synergySet.add(p); });
+          }
+        }
+      }
+    } else if (placed.length === 2) {
+      const [c1, c2] = placed;
+      for (const key of Object.keys(DEMO_RECIPES)) {
+        const parts = key.split('+');
+        if (parts.length === 3) {
+          const copy = [...parts];
+          const i1 = copy.indexOf(c1);
+          if (i1 !== -1) {
+            copy.splice(i1, 1);
+            const i2 = copy.indexOf(c2);
+            if (i2 !== -1) {
+              copy.splice(i2, 1);
+              copy.forEach(p => synergySet.add(p));
+            }
+          }
+        }
+      }
+    }
+
+    window.HanziForge = window.HanziForge || {};
+    window.HanziForge.synergyRadicals = synergySet;
+    window.HanziForge.renderPaletteTokens?.();
   }
 
   // ── Fuse Action ───────────────────────────────────────────────────────────
@@ -172,15 +215,64 @@
         `
       });
       addToHistory(chars, result);
-      // TODO Week 7: window.HanziForge.awardXP(10)
+      unlockCharacter(result);
     } else {
       showResult({
         type: 'warning',
-        html: `<p>⚠️ <strong>${chars.join(' + ')}</strong> chưa có công thức.</p>
+        html: `<p>⚠️ <strong>${chars.join(' + ')}</strong> chưa có công thức ghép.</p>
                <p style="font-size:.75rem;margin-top:.4rem;color:var(--text-dim)">
-               Tuần 4 sẽ tích hợp đầy đủ 8,660 công thức từ MakeMeAHanzi.</p>`
+               Hãy thử các bộ thủ có trong sách công thức hoặc danh sách gợi ý!</p>`
       });
     }
+  }
+
+  function unlockCharacter(result) {
+    window.HanziForge = window.HanziForge || {};
+    window.HanziForge.craftedTokens = window.HanziForge.craftedTokens || [];
+
+    // Add to crafted tokens if not existing
+    if (!window.HanziForge.craftedTokens.some(c => c.char === result.char)) {
+      window.HanziForge.craftedTokens.unshift({
+        char: result.char,
+        sino: result.sino,
+        pinyin: result.pinyin,
+        meaning: result.meaning,
+        strokes: 0
+      });
+    }
+
+    // Update crafted counter badge
+    const craftedCountEl = document.getElementById('crafted-count');
+    if (craftedCountEl) craftedCountEl.textContent = window.HanziForge.craftedTokens.length;
+
+    // Update progress stats
+    const unlockedEl = document.getElementById('stat-unlocked');
+    if (unlockedEl) unlockedEl.textContent = window.HanziForge.craftedTokens.length;
+    const recipesEl = document.getElementById('stat-recipes');
+    if (recipesEl) recipesEl.textContent = fuseCount;
+
+    // Add to unlocked grid in Progress view
+    const unlockedGrid = document.getElementById('unlocked-grid');
+    if (unlockedGrid) {
+      const emptyEl = unlockedGrid.querySelector('.unlocked-empty');
+      if (emptyEl) emptyEl.remove();
+
+      let existingCard = unlockedGrid.querySelector(`[data-char="${result.char}"]`);
+      if (!existingCard) {
+        const card = document.createElement('div');
+        card.className = 'radical-card';
+        card.dataset.char = result.char;
+        card.innerHTML = `
+          <div class="radical-char">${result.char}</div>
+          <div class="radical-sino">${result.sino}</div>
+          <div class="radical-pinyin">${result.pinyin || '—'}</div>
+          <div class="radical-meaning">${result.meaning}</div>
+        `;
+        unlockedGrid.appendChild(card);
+      }
+    }
+
+    window.HanziForge.renderPaletteTokens?.();
   }
 
   function showResult({ type, html }) {
@@ -235,17 +327,17 @@
     });
   }
 
-  // ── Basic Recipe Lookup ───────────────────────────────────────────────────
-  // Week 3: demo set — Week 4 will replace with full CRAFTING_RECIPES_MAP
+  // ── Demo Recipes Dictionary ───────────────────────────────────────────────
   const DEMO_RECIPES = {
+    // 2-component fusions
     '人+木': { char: '休', sino: 'Hưu',  pinyin: 'xiū', meaning: 'Nghỉ ngơi, hưu trí' },
     '木+木': { char: '林', sino: 'Lâm',  pinyin: 'lín', meaning: 'Rừng thưa' },
+    '林+木': { char: '森', sino: 'Sâm',  pinyin: 'sēn', meaning: 'Rừng rậm' },
     '日+月': { char: '明', sino: 'Minh', pinyin: 'míng',meaning: 'Sáng, rõ ràng, thông minh' },
     '人+人': { char: '从', sino: 'Tùng', pinyin: 'cóng',meaning: 'Theo sau, cùng đi' },
-    '林+木': { char: '森', sino: 'Sâm',  pinyin: 'sēn', meaning: 'Rừng rậm' },
     '女+子': { char: '好', sino: 'Hảo',  pinyin: 'hǎo', meaning: 'Tốt, đẹp, thích' },
     '火+火': { char: '炎', sino: 'Viêm', pinyin: 'yán', meaning: 'Nóng bỏng, bốc lửa' },
-    '水+木': { char: '沐', sino: 'Mộc',  pinyin: 'mù',  meaning: 'Gội đầu' },
+    '水+木': { char: '沐', sino: 'Mộc',  pinyin: 'mù',  meaning: 'Gội đầu, tắm gội' },
     '口+口': { char: '吕', sino: 'Lữ',   pinyin: 'lǚ',  meaning: 'Họ Lữ, cung nhạc' },
     '山+山': { char: '屾', sino: 'Sàn',  pinyin: 'shèn',meaning: 'Hai núi cạnh nhau' },
     '日+木': { char: '杲', sino: 'Cảo',  pinyin: 'gǎo', meaning: 'Mặt trời trên cây, sáng rực' },
@@ -253,6 +345,17 @@
     '心+刀': { char: '忍', sino: 'Nhẫn', pinyin: 'rěn', meaning: 'Nhẫn nhịn, chịu đựng' },
     '小+大': { char: '尖', sino: 'Tiêm', pinyin: 'jiān',meaning: 'Nhọn, sắc bén' },
     '日+日': { char: '昌', sino: 'Xương',pinyin: 'chāng',meaning: 'Thịnh vượng, phát đạt' },
+    '田+力': { char: '男', sino: 'Nam',  pinyin: 'nán', meaning: 'Người nam, đàn ông' },
+    '宀+女': { char: '安', sino: 'An',   pinyin: 'ān',  meaning: 'Bình an, yên ổn' },
+    '宀+子': { char: '字', sino: 'Tự',   pinyin: 'zì',  meaning: 'Chữ viết' },
+    '手+目': { char: '看', sino: 'Khán', pinyin: 'kàn', meaning: 'Nhìn, xem' },
+
+    // 3-component fusions (Kim tự tháp / 品字)
+    '木+木+木': { char: '森', sino: 'Sâm',  pinyin: 'sēn', meaning: 'Rừng rậm' },
+    '人+人+人': { char: '众', sino: 'Chúng', pinyin: 'zhòng',meaning: 'Đám đông, quần chúng' },
+    '口+口+口': { char: '品', sino: 'Phẩm', pinyin: 'pǐn', meaning: 'Phẩm chất, đánh giá' },
+    '日+日+日': { char: '晶', sino: 'Tinh', pinyin: 'jīng',meaning: 'Pha lê, sáng lấp lánh' },
+    '火+火+火': { char: '焱', sino: 'Diễm', pinyin: 'yàn', meaning: 'Lửa bốc cao, sáng rực' },
   };
 
   function lookupRecipe(chars) {
@@ -271,11 +374,96 @@
     return null;
   }
 
+  // ── Render Codex Recipe Book ──────────────────────────────────────────────
+  function renderCodexRecipes(filterQuery = '') {
+    const grid = document.getElementById('codex-recipes-grid');
+    if (!grid) return;
+
+    const query = filterQuery.toLowerCase().trim();
+    const recipeKeys = Object.keys(DEMO_RECIPES);
+
+    const filtered = recipeKeys.filter(key => {
+      const r = DEMO_RECIPES[key];
+      if (!query) return true;
+      return key.includes(query) ||
+             r.char.includes(query) ||
+             r.sino.toLowerCase().includes(query) ||
+             (r.pinyin && r.pinyin.toLowerCase().includes(query)) ||
+             r.meaning.toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p class="palette-empty" style="grid-column:1/-1">Không tìm thấy công thức nào phù hợp.</p>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(key => {
+      const r = DEMO_RECIPES[key];
+      return `
+        <div class="recipe-card" data-key="${key}" title="Nhấp để thử ghép chữ này trên bàn!">
+          <div class="recipe-ingredients">${key}</div>
+          <div class="recipe-arrow">↓</div>
+          <div class="recipe-result">${r.char}</div>
+          <div class="recipe-name"><strong>${r.sino}</strong> (${r.pinyin || '—'})</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem">${r.meaning}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Click recipe card to auto-load onto canvas
+    grid.querySelectorAll('.recipe-card').forEach(card => {
+      card.addEventListener('click', () => {
+        quickLoadRecipe(card.dataset.key);
+      });
+    });
+  }
+
+  function quickLoadRecipe(recipeKey) {
+    const parts = recipeKey.split('+');
+    // Clear canvas
+    tokens.forEach(t => t.el?.remove());
+    tokens.length = 0;
+
+    // Switch to Builder tab
+    document.getElementById('tab-builder')?.click();
+
+    // Close codex modal
+    window.HanziForge?.closeModal?.('modal-codex');
+
+    // Place tokens across the canvas
+    const spacing = 100 / (parts.length + 1);
+    parts.forEach((p, idx) => {
+      const rad = window.HanziForge?.RADICALS_DATA?.find(r => r[0] === p) ||
+                  window.HanziForge?.craftedTokens?.find(c => c.char === p);
+      placeToken({
+        char: p,
+        sino: rad ? (rad[1] || rad.sino) : p,
+        pinyin: rad ? (rad[2] || rad.pinyin) : '',
+        meaning: rad ? (rad[4] || rad.meaning) : '',
+        x: parseFloat((spacing * (idx + 1)).toFixed(1)),
+        y: 50
+      });
+    });
+  }
+
+  // Bind codex search
+  document.getElementById('codex-search')?.addEventListener('input', e => {
+    renderCodexRecipes(e.target.value);
+  });
+
+  // Re-render codex recipes when codex modal opens
+  document.getElementById('btn-open-codex')?.addEventListener('click', () => {
+    renderCodexRecipes();
+  });
+
   // ── Init ──────────────────────────────────────────────────────────────────
   updateUI();
+  renderCodexRecipes();
 
   window.HanziForge = window.HanziForge || {};
   window.HanziForge.placeToken = placeToken;
+  window.HanziForge.DEMO_RECIPES = DEMO_RECIPES;
+  window.HanziForge.quickLoadRecipe = quickLoadRecipe;
 
-  console.log('[HanziForge] builder.js loaded — canvas drag-and-drop active');
+  console.log('[HanziForge] builder.js loaded — canvas workspace & fusion engine ready');
 })();

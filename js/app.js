@@ -88,17 +88,36 @@
   });
 
   // Modal tabs
+  const tabNames = {
+    vocab: 'Từ vựng HSK',
+    sentences: 'Câu ví dụ song ngữ',
+    stroke: 'Luyện nét viết HanziWriter',
+    etymology: 'Từ nguyên & Nguồn gốc'
+  };
+
   document.querySelectorAll('.modal-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const panel = btn.closest('.modal-panel');
       panel?.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      // TODO Week 5+: render tab content based on btn.dataset.mtab
+
+      const contentEl = document.getElementById('modal-tab-content');
+      if (contentEl) {
+        const title = tabNames[btn.dataset.mtab] || 'Dữ liệu';
+        contentEl.innerHTML = `
+          <div class="modal-content-placeholder">
+            <span style="font-size:2rem;display:block;margin-bottom:0.25rem">✨</span>
+            <p style="font-weight:700;font-size:1rem;color:var(--gold-lt)">Coming Soon</p>
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-top:0.2rem">
+              Tính năng <strong>${title}</strong> đang được phát triển.
+            </p>
+          </div>
+        `;
+      }
     });
   });
 
   // ── Base State Display ────────────────────────────────────────────────────
-  // Static placeholder — Week 7 replaces with LocalStorage state.js
   const baseState = { streak: 1, xp: 0, level: 1, unlocked: 0, recipes: 0 };
 
   function renderStats(s) {
@@ -126,20 +145,17 @@
 
   renderStats(baseState);
 
-  // ── Save / Export buttons (placeholder — Week 7 will wire state.js) ───────
+  // ── Save / Export buttons (Coming Soon) ───────────────────────────────────
   document.getElementById('btn-save')?.addEventListener('click', () => {
-    console.log('[HanziForge] Save — Week 7: state.js will handle LocalStorage persistence');
-    alert('Tính năng lưu sẽ được thêm vào tuần 7!');
+    alert('Coming Soon — Tính năng lưu tiến độ đang được hoàn thiện!');
   });
 
   document.getElementById('btn-export-save')?.addEventListener('click', () => {
-    console.log('[HanziForge] Export — Week 7: state.js will export JSON save file');
-    alert('Tính năng xuất dữ liệu sẽ được thêm vào tuần 7!');
+    alert('Coming Soon — Tính năng xuất dữ liệu đang được hoàn thiện!');
   });
 
   document.getElementById('btn-import-save')?.addEventListener('click', () => {
-    console.log('[HanziForge] Import — Week 7: state.js will import JSON save file');
-    alert('Tính năng nhập dữ liệu sẽ được thêm vào tuần 7!');
+    alert('Coming Soon — Tính năng nhập dữ liệu đang được hoàn thiện!');
   });
 
   // ── Expose global API for other modules ──────────────────────────────────

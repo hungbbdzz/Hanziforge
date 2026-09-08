@@ -115,30 +115,100 @@
     });
   }
 
+  // ── Craftable Radicals in Demo ────────────────────────────────────────────
+  const CRAFTABLE_RADICAL_CHARS = new Set([
+    '人', '木', '日', '月', '女', '子', '火', '水', '口', '山',
+    '土', '心', '刀', '小', '大', '田', '力', '宀', '手', '目', '玉'
+  ]);
+
+  let paletteTab     = 'demo'; // 'demo' | 'crafted' | 'synergy' | 'all'
+  let paletteQuery   = '';
+  let paletteStrokes = 'all';
+
   function renderPaletteTokens() {
-    const paletteEl = document.getElementById('palette-tokens');
-    const countEl   = document.getElementById('palette-count');
+    const paletteEl      = document.getElementById('palette-tokens');
+    const countEl        = document.getElementById('palette-count');
+    const craftedCountEl = document.getElementById('crafted-count');
+    const synergyCountEl = document.getElementById('synergy-count');
     if (!paletteEl) return;
 
-    const data = RADICALS_DATA;
-    if (countEl) countEl.textContent = data.length;
+    window.HanziForge = window.HanziForge || {};
+    const craftedList = window.HanziForge.craftedTokens || [];
+    const synergySet  = window.HanziForge.synergyRadicals || new Set();
 
+    if (craftedCountEl) craftedCountEl.textContent = craftedList.length;
+    if (synergyCountEl) synergyCountEl.textContent = synergySet.size;
+
+    let baseData = [];
+    if (paletteTab === 'demo') {
+      baseData = RADICALS_DATA.filter(r => CRAFTABLE_RADICAL_CHARS.has(r[0]));
+    } else if (paletteTab === 'crafted') {
+      baseData = craftedList.map(c => [c.char, c.sino, c.pinyin, c.strokes || 0, c.meaning]);
+    } else if (paletteTab === 'synergy') {
+      if (synergySet.size === 0) {
+        baseData = [];
+      } else {
+        baseData = RADICALS_DATA.filter(r => synergySet.has(r[0]));
+      }
+    } else {
+      baseData = RADICALS_DATA;
+    }
+
+    // Filter by stroke chips
+    if (paletteStrokes !== 'all') {
+      baseData = baseData.filter(r => {
+        const s = r[3];
+        if (paletteStrokes === '5+') return s >= 5;
+        if (paletteStrokes === '1-2') return s <= 2;
+        return s === parseInt(paletteStrokes);
+      });
+    }
+
+    // Filter by search query
+    if (paletteQuery) {
+      baseData = baseData.filter(r =>
+        r[0].includes(paletteQuery) ||
+        (r[1] && r[1].toLowerCase().includes(paletteQuery)) ||
+        (r[2] && r[2].toLowerCase().includes(paletteQuery)) ||
+        (r[4] && r[4].toLowerCase().includes(paletteQuery))
+      );
+    }
+
+    if (countEl) countEl.textContent = baseData.length;
     paletteEl.innerHTML = '';
-    data.forEach(r => {
+
+    if (baseData.length === 0) {
+      let emptyMsg = 'Không tìm thấy bộ thủ phù hợp.';
+      if (paletteTab === 'crafted') {
+        emptyMsg = 'Chưa có chữ nào được chế tác. Hãy kéo ghép các bộ thủ trên bàn trước!';
+      } else if (paletteTab === 'synergy') {
+        emptyMsg = 'Kéo ít nhất 1 bộ thủ lên bàn Tianzige để xem các bộ thủ hợp lệ có thể ghép cùng!';
+      }
+      paletteEl.innerHTML = `<div class="palette-empty">${emptyMsg}</div>`;
+      return;
+    }
+
+    baseData.forEach(r => {
       const token = document.createElement('div');
       token.className  = 'palette-token';
       token.role       = 'listitem';
       token.draggable  = true;
       token.dataset.hanzi   = r[0];
-      token.dataset.sino    = r[1];
-      token.dataset.pinyin  = r[2];
-      token.dataset.strokes = r[3];
-      token.dataset.meaning = r[4];
+      token.dataset.sino    = r[1] || '';
+      token.dataset.pinyin  = r[2] || '';
+      token.dataset.strokes = r[3] || 0;
+      token.dataset.meaning = r[4] || '';
+
+      if (synergySet.has(r[0])) {
+        token.classList.add('synergy-match');
+        token.title = `✨ Có thể ghép với thẻ đang có trên bàn!`;
+      }
+
       token.innerHTML = `
         <span class="token-char">${r[0]}</span>
         <span class="token-info">
-          <span class="token-sino">${r[1]}</span>
-          <span class="token-sub">${r[2]} · ${r[4]}</span>
+          <span class="token-sino">${r[1] || '—'}</span>
+          <span class="token-sub">${r[2] || ''} · ${r[4] || ''}</span>
         </span>
       `;
       token.addEventListener('dragstart', e => {
@@ -146,7 +216,6 @@
         e.dataTransfer.setData('text/plain', JSON.stringify({
           char: r[0], sino: r[1], pinyin: r[2], meaning: r[4]
         }));
-        // Signal to builder.js
         window.HanziForge = window.HanziForge || {};
         window.HanziForge.dragData = { char: r[0], sino: r[1], pinyin: r[2], meaning: r[4] };
       });
@@ -166,7 +235,6 @@
     const hwTarget = document.getElementById('char-hw-target');
     if (hwTarget) {
       hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:4rem;color:var(--gold-lt)">${r[0]}</span>`;
-      // TODO Week 5: HanziWriter.create('char-hw-target', r[0], { width:110, height:110, ... })
     }
 
     // Tags
@@ -178,13 +246,13 @@
       `;
     }
 
-    // Placeholder tab content
+    // Placeholder tab content — Coming Soon
     const contentEl = document.getElementById('modal-tab-content');
     if (contentEl) {
       contentEl.innerHTML = `
-        <div style="padding:1rem;color:var(--text-muted);font-size:.85rem;text-align:center">
-          <p style="margin-bottom:.5rem">📝 Dữ liệu từ vựng sẽ được tải vào Tuần 8</p>
-          <p style="font-size:.75rem;color:var(--text-dim)">Tuần 5: Luyện nét HanziWriter · Tuần 6: Từ vựng HSK · Tuần 8: Câu ví dụ</p>
+        <div style="padding:1.5rem;color:var(--text-muted);font-size:.85rem;text-align:center">
+          <p style="margin-bottom:.5rem;color:var(--gold-lt);font-weight:600;font-size:1rem">📝 Coming Soon</p>
+          <p style="font-size:.78rem;color:var(--text-dim)">Tính năng tra cứu từ vựng, luyện nét viết và câu ví dụ đang được phát triển.</p>
         </div>
       `;
     }
@@ -194,13 +262,13 @@
 
   // ── Filter & Search bindings ──────────────────────────────────────────────
 
-  // Search in radical browser
+  // Search in radical browser (Tab 2)
   document.getElementById('radical-search')?.addEventListener('input', e => {
     searchQuery = e.target.value.trim();
     renderRadicalsGrid();
   });
 
-  // Stroke filter buttons in radical browser
+  // Stroke filter buttons in radical browser (Tab 2)
   document.querySelectorAll('#stroke-filter .filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#stroke-filter .filter-btn').forEach(b => b.classList.remove('active'));
@@ -210,16 +278,20 @@
     });
   });
 
+  // Palette tabs (Tab 1)
+  document.querySelectorAll('#palette-filter-tabs .filter-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#palette-filter-tabs .filter-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      paletteTab = btn.dataset.tab;
+      renderPaletteTokens();
+    });
+  });
+
   // Palette search
   document.getElementById('palette-search')?.addEventListener('input', e => {
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll('.palette-token').forEach(t => {
-      const match = t.dataset.hanzi.includes(q)
-        || t.dataset.sino.toLowerCase().includes(q)
-        || t.dataset.pinyin.includes(q)
-        || t.dataset.meaning.toLowerCase().includes(q);
-      t.style.display = match ? '' : 'none';
-    });
+    paletteQuery = e.target.value.trim().toLowerCase();
+    renderPaletteTokens();
   });
 
   // Stroke chips in palette
@@ -227,27 +299,22 @@
     btn.addEventListener('click', () => {
       document.querySelectorAll('#stroke-chips .chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const val = btn.dataset.strokes;
-      document.querySelectorAll('.palette-token').forEach(t => {
-        const s = parseInt(t.dataset.strokes);
-        let show = true;
-        if      (val === 'all')  show = true;
-        else if (val === '5+')   show = s >= 5;
-        else if (val === '1-2')  show = s <= 2;
-        else                     show = s === parseInt(val);
-        t.style.display = show ? '' : 'none';
-      });
+      paletteStrokes = btn.dataset.strokes;
+      renderPaletteTokens();
     });
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
+  window.HanziForge = window.HanziForge || {};
+  window.HanziForge.RADICALS_DATA = RADICALS_DATA;
+  window.HanziForge.CRAFTABLE_RADICAL_CHARS = CRAFTABLE_RADICAL_CHARS;
+  window.HanziForge.craftedTokens = window.HanziForge.craftedTokens || [];
+  window.HanziForge.synergyRadicals = window.HanziForge.synergyRadicals || new Set();
+  window.HanziForge.renderPaletteTokens = renderPaletteTokens;
+  window.HanziForge.openRadicalDetail = onRadicalCardClick;
+
   renderPaletteTokens();
   renderRadicalsGrid();
 
-  // Expose for builder.js
-  window.HanziForge = window.HanziForge || {};
-  window.HanziForge.RADICALS_DATA = RADICALS_DATA;
-  window.HanziForge.openRadicalDetail = onRadicalCardClick;
-
-  console.log(`[HanziForge] radicals.js loaded — ${RADICALS_DATA.length} radicals rendered`);
+  console.log(`[HanziForge] radicals.js loaded — ${RADICALS_DATA.length} radicals, demo filter active`);
 })();
