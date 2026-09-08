@@ -141,15 +141,17 @@ Học chữ Hán theo phương pháp truyền thống (ghi nhớ máy móc từn
 
 ## 4. Feature Specification
 
-### 4.1 Core Features (MVP)
+### 4.1 Core Features (MVP) & Weekly Implementation Scope
+
+> 📌 **Quy trình triển khai:** Dự án được thực hiện theo tiến độ môn học Chuyên đề 4 (VKU 2026), cam kết mã nguồn theo từng tuần. Thư mục `hanziforge-ref` đóng vai trò là bản kiến trúc tham chiếu hoàn thiện (Target Architecture) sẽ dần đạt tới sau các tuần tiếp theo. Các tính năng chưa đến tuần thực hiện được thể hiện dưới dạng placeholder `Coming Soon` trên giao diện.
 
 | Feature | Module | Status |
 |---------|--------|--------|
 | 214 KangXi radicals grid | `radicals.js` | ✅ Week 3 |
 | Search + filter | `radicals.js` | ✅ Week 3 |
 | Drag-and-drop canvas | `builder.js` | ✅ Week 3 |
-| Basic fusion (15 recipes) | `builder.js` | ✅ Week 3 |
-| Tab navigation + modals | `app.js` | ✅ Week 2 |
+| Curated demo palette (20 bộ thủ khả dụng) | `radicals.js` | ✅ Week 4 |
+| Basic fusion (24 demo recipes) | `builder.js` | ✅ Week 4 |
 | Full spatial engine (8,660 recipes) | `builder.js` | 🔄 Week 4 |
 | HanziWriter stroke animation | `radicals.js` | 🔄 Week 5 |
 | CVDICT definitions | `app.js` | 🔄 Week 6 |
