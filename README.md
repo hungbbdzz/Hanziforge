@@ -17,6 +17,8 @@ Học chữ Hán truyền thống thường nặng về ghi nhớ máy móc từ
 - Gắn liền với **Âm Hán–Việt**, Pinyin, nghĩa tiếng Việt chuẩn xác và giải nghĩa từ nguyên trực quan.
 
 ---
+![Uploading {80638562-2786-4BEF-A61B-91F1B0153DC7}.png…]()
+
 
 ## 🚀 Tính năng hiện tại (Bản Demo Prototype)
 
