@@ -1416,6 +1416,157 @@ body::before {
   color: var(--text-dim);
 }
 
+/* Modal content elements */
+.vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+}
+
+.vocab-item-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  transition: var(--t-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vocab-item-card:hover {
+  border-color: var(--gold);
+  background: rgba(245, 158, 11, 0.08);
+  transform: translateY(-2px);
+}
+
+.vocab-item-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vocab-item-word {
+  font-family: var(--font-hanzi);
+  font-size: 1.25rem;
+  color: var(--gold-lt);
+  font-weight: 700;
+}
+
+.vocab-item-pinyin {
+  font-size: 0.8rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.vocab-item-meaning {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Sentence elements */
+.sentences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+}
+
+.sentence-item-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition: var(--t-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sentence-item-card:hover {
+  border-color: var(--border-highlight);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sentence-item-zh {
+  font-family: var(--font-hanzi);
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sentence-item-py {
+  font-size: 0.78rem;
+  color: var(--gold-lt);
+  font-style: italic;
+}
+
+.sentence-item-vi {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Etymology card */
+.etymology-card {
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--r-md);
+  padding: 1.25rem;
+  line-height: 1.65;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.etymology-header {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gold-lt);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Stroke rule cards */
+.stroke-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+}
+
+.stroke-rule-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+}
+
+.stroke-rule-title {
+  font-weight: 700;
+  color: var(--gold-lt);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stroke-rule-eg {
+  font-family: var(--font-hanzi);
+  font-size: 1rem;
+  color: #fff;
+  margin-top: 0.2rem;
+}
+
 /* Codex modal */
 .modal-codex-panel { width: min(900px, 100%); }
 .modal-codex-panel h2 { font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 0.25rem; }

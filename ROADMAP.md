@@ -75,11 +75,12 @@ hanziforge/
 - [x] Character detail modal fully wired: HanziWriter + HSK vocab
 
 ### Week 6 — 22/09/2026 | Ch.5: Software Architecture
-**Planned commit:** `feat: character detail modal — full vocabulary and sentences`
-- [ ] HSK Level 1–6 compound vocabulary per character
-- [ ] Accented Pinyin display
-- [ ] CVDICT Vietnamese definitions (basic subset)
-- [ ] System architecture documentation update
+**Commit:** `feat: character detail modal with vocabulary, sentences and audio pronunciation`
+- [x] HSK compound vocabulary per character with interactive audio pronunciation
+- [x] Accented Pinyin display and tone marks
+- [x] Sino-Vietnamese meanings and contextual example sentences
+- [x] 7 Stroke order rules guide and character etymology tab
+- [x] Web Speech API integration for native Chinese pronunciation
 
 ### Week 7 — 29/09/2026 | Ch.6: AI Coding
 **Planned commit:** `feat: game state — XP, levels, streak, save/load`
