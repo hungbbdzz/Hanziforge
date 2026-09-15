@@ -59,14 +59,14 @@ hanziforge/
 ## 🚀 Upcoming (Weeks 4–13)
 
 ### Week 4 — 08/09/2026 | Ch.3: Requirement Analysis & PRD
-**Planned commit:** `docs: add PRD and system architecture`
-- [ ] `ROADMAP.md` update with user stories and acceptance criteria
-- [ ] Full `SpatialGeometry` engine: 10 IDS topology patterns
+**Commit:** `feat: add 10-pattern spatial geometry engine and fusion particle effect`
+- [x] `ROADMAP.md` update with user stories and acceptance criteria (PRD.md)
+- [x] Full `SpatialGeometry` engine: 10 IDS topology patterns
   - `⿰` Left–Right, `⿱` Top–Bottom
   - `⿴⿵⿶⿷⿸⿹⿺` Surround variants
   - `⿲⿳` Three-part, `品` Triangle pyramid
-- [ ] Full `CRAFTING_RECIPES_MAP`: 8,660 recipes from MakeMeAHanzi
-- [ ] Particle burst fusion animation
+- [x] Curated crafting recipes with spatial layout awareness
+- [x] Particle burst fusion animation
 
 ### Week 5 — 15/09/2026 | Ch.4: Product Design & Prototype
 **Planned commit:** `feat: integrate HanziWriter stroke animations`
