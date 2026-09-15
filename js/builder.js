@@ -73,12 +73,15 @@
 
     makeDraggable(el, data);
     el.addEventListener('dblclick', () => {
-      // Double-click → open character detail (Week 5: HanziWriter)
-      if (window.HanziForge?.openRadicalDetail) {
-        window.HanziForge.openRadicalDetail(
-          window.HanziForge.RADICALS_DATA?.find(r => r[0] === data.char)
-          || [data.char, data.sino, data.pinyin, 0, data.meaning]
-        );
+      // Double-click → open character detail modal with HanziWriter
+      if (window.HanziForge?.openCharDetail) {
+        const rad = window.HanziForge.RADICALS_DATA?.find(r => r[0] === data.char);
+        window.HanziForge.openCharDetail(data.char, {
+          sino: rad ? rad[1] : (data.sino || data.char),
+          pinyin: rad ? rad[2] : (data.pinyin || ''),
+          strokes: rad ? rad[3] : 0,
+          meaning: rad ? rad[4] : (data.meaning || '')
+        });
       }
     });
 
@@ -464,13 +467,21 @@
       showResult({
         type: 'success',
         html: `
-          <div class="codex-result-char">${result.char}</div>
+          <div class="codex-result-char" style="cursor:pointer" title="Nhấp để xem animation nét viết">${result.char}</div>
           <div class="codex-result-sino">${result.sino}</div>
           <div class="codex-result-pinyin">${result.pinyin || '—'}</div>
           <div class="codex-result-meaning">${result.meaning}</div>
           ${result.layoutName ? `<div style="font-size:0.75rem;color:var(--gold-lt);margin-top:0.35rem">${result.layoutName}</div>` : ''}
         `
       });
+
+      const resChar = resultArea?.querySelector('.codex-result-char');
+      if (resChar) {
+        resChar.addEventListener('click', () => {
+          window.HanziForge?.openCharDetail(result.char, result);
+        });
+      }
+
       addToHistory(chars, result);
       unlockCharacter(result);
     } else {
@@ -519,12 +530,17 @@
         const card = document.createElement('div');
         card.className = 'radical-card';
         card.dataset.char = result.char;
+        card.style.cursor = 'pointer';
+        card.title = `${result.char} — ${result.sino}\nNhấp để xem animation nét viết`;
         card.innerHTML = `
           <div class="radical-char">${result.char}</div>
           <div class="radical-sino">${result.sino}</div>
           <div class="radical-pinyin">${result.pinyin || '—'}</div>
           <div class="radical-meaning">${result.meaning}</div>
         `;
+        card.addEventListener('click', () => {
+          window.HanziForge?.openCharDetail(result.char, result);
+        });
         unlockedGrid.appendChild(card);
       }
     }

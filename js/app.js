@@ -59,8 +59,101 @@
   }
 
   // ── Modal Management ──────────────────────────────────────────────────────
+  let currentWriter = null;
+  let currentChar = '';
+
   function openModal(id)  { document.getElementById(id)?.removeAttribute('hidden'); }
-  function closeModal(id) { document.getElementById(id)?.setAttribute('hidden', ''); }
+  function closeModal(id) {
+    if (id === 'modal-char-detail' && currentWriter) {
+      try { currentWriter.cancelQuiz(); } catch (e) {}
+    }
+    document.getElementById(id)?.setAttribute('hidden', '');
+  }
+
+  // Character Detail & HanziWriter Integration
+  function openCharDetail(char, info = {}) {
+    if (!char) return;
+    currentChar = char;
+
+    if (currentWriter) {
+      try { currentWriter.cancelQuiz(); } catch (e) {}
+      currentWriter = null;
+    }
+
+    const hwTarget = document.getElementById('char-hw-target');
+    if (hwTarget) hwTarget.innerHTML = '';
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    set('modal-char-title', info.sino || char);
+    set('modal-char-pinyin', info.pinyin ? `[${info.pinyin}]` : '');
+    set('modal-char-meaning', info.meaning || '');
+
+    const tagsEl = document.getElementById('modal-char-tags');
+    if (tagsEl) {
+      const strokesText = info.strokes ? `Bộ ${info.strokes} nét` : 'Hán tự';
+      tagsEl.innerHTML = `
+        <span class="tag hsk">${strokesText}</span>
+        <span class="tag trad">${char}</span>
+      `;
+    }
+
+    openModal('modal-char-detail');
+
+    if (window.HanziWriter && hwTarget) {
+      try {
+        currentWriter = HanziWriter.create('char-hw-target', char, {
+          width: 110,
+          height: 110,
+          padding: 5,
+          strokeColor: '#F59E0B',
+          outlineColor: 'rgba(255, 255, 255, 0.15)',
+          radicalColor: '#10B981',
+          drawingColor: '#FFFFFF',
+          strokeAnimationSpeed: 1,
+          delayBetweenStrokes: 250,
+          showCharacter: false,
+          showOutline: true,
+          charDataLoader: (charToLoad, onComplete, onError) => {
+            fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(charToLoad)}.json`)
+              .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Not in standard set');
+              })
+              .then(data => onComplete(data))
+              .catch(() => {
+                fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data-traditional@latest/${encodeURIComponent(charToLoad)}.json`)
+                  .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Not in traditional set');
+                  })
+                  .then(data => onComplete(data))
+                  .catch(err => {
+                    if (onError) onError(err);
+                  });
+              });
+          },
+          onLoadCharDataSuccess: () => {
+            currentWriter.animateCharacter();
+          },
+          onLoadCharDataError: () => {
+            if (hwTarget) {
+              hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;
+            }
+          }
+        });
+      } catch (err) {
+        if (hwTarget) {
+          hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;
+        }
+      }
+    } else if (hwTarget) {
+      hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;
+    }
+  }
 
   // Codex modal
   document.getElementById('btn-open-codex')
@@ -160,11 +253,14 @@
 
   // ── Expose global API for other modules ──────────────────────────────────
   window.HanziForge = window.HanziForge || {};
-  window.HanziForge.openModal    = openModal;
-  window.HanziForge.closeModal   = closeModal;
-  window.HanziForge.isSoundOn    = () => soundEnabled;
-  window.HanziForge.isTraditional = () => isTraditional;
-  window.HanziForge.renderStats  = renderStats;
+  window.HanziForge.openModal      = openModal;
+  window.HanziForge.closeModal     = closeModal;
+  window.HanziForge.openCharDetail = openCharDetail;
+  window.HanziForge.getCurrentWriter = () => currentWriter;
+  window.HanziForge.getCurrentChar = () => currentChar;
+  window.HanziForge.isSoundOn      = () => soundEnabled;
+  window.HanziForge.isTraditional  = () => isTraditional;
+  window.HanziForge.renderStats    = renderStats;
 
-  console.log('[HanziForge] app.js loaded — tab navigation & UI controls active');
+  console.log('[HanziForge] app.js loaded — tab navigation, UI controls & HanziWriter modal active');
 })();

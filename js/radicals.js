@@ -225,45 +225,24 @@
         window.HanziForge = window.HanziForge || {};
         window.HanziForge.dragData = { char: r[0], sino: r[1], pinyin: r[2], meaning: r[4] };
       });
+      token.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        onRadicalCardClick(r);
+      });
       paletteEl.appendChild(token);
     });
   }
 
-  // ── Radical Card Click → Open Character Detail Modal ─────────────────────
+  // ── Radical Card Click → Open Character Detail Modal (HanziWriter) ────────
   function onRadicalCardClick(r) {
-    // Populate modal fields
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    set('modal-char-title',   r[1]);
-    set('modal-char-pinyin',  r[2]);
-    set('modal-char-meaning', r[4]);
-
-    // Display the character large in the HanziWriter slot
-    const hwTarget = document.getElementById('char-hw-target');
-    if (hwTarget) {
-      hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:4rem;color:var(--gold-lt)">${r[0]}</span>`;
+    if (window.HanziForge?.openCharDetail) {
+      window.HanziForge.openCharDetail(r[0], {
+        sino: r[1],
+        pinyin: r[2],
+        strokes: r[3],
+        meaning: r[4]
+      });
     }
-
-    // Tags
-    const tagsEl = document.getElementById('modal-char-tags');
-    if (tagsEl) {
-      tagsEl.innerHTML = `
-        <span class="tag hsk">Bộ thủ ${r[3]} nét</span>
-        <span class="tag trad">KangXi #${RADICALS_DATA.indexOf(r) + 1}</span>
-      `;
-    }
-
-    // Placeholder tab content — Coming Soon
-    const contentEl = document.getElementById('modal-tab-content');
-    if (contentEl) {
-      contentEl.innerHTML = `
-        <div style="padding:1.5rem;color:var(--text-muted);font-size:.85rem;text-align:center">
-          <p style="margin-bottom:.5rem;color:var(--gold-lt);font-weight:600;font-size:1rem">📝 Coming Soon</p>
-          <p style="font-size:.78rem;color:var(--text-dim)">Tính năng tra cứu từ vựng, luyện nét viết và câu ví dụ đang được phát triển.</p>
-        </div>
-      `;
-    }
-
-    window.HanziForge?.openModal('modal-char-detail');
   }
 
   // ── Filter & Search bindings ──────────────────────────────────────────────
