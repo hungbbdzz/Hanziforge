@@ -69,9 +69,9 @@ hanziforge/
 - [x] Particle burst fusion animation
 
 ### Week 5 — 15/09/2026 | Ch.4: Product Design & Prototype
-**Commit:** `feat: integrate HanziWriter stroke animations for radicals and characters`
+**Commit:** `feat: add interactive stroke quiz mode and animation controls`
 - [x] HanziWriter stroke order animation on all radical cards
-- [ ] Interactive stroke quiz (draw character in correct order)
+- [x] Interactive stroke quiz (draw character in correct order)
 - [x] Character detail modal fully wired: HanziWriter + HSK vocab
 
 ### Week 6 — 22/09/2026 | Ch.5: Software Architecture

@@ -101,6 +101,50 @@
       `;
     }
 
+    const hwStatus   = document.getElementById('hw-status-label');
+    const btnAnimate = document.getElementById('btn-hw-animate');
+    const btnQuiz    = document.getElementById('btn-hw-quiz');
+    const btnStop    = document.getElementById('btn-hw-stop');
+
+    if (hwStatus) hwStatus.textContent = 'Đang tải hoạt họa nét...';
+
+    if (btnAnimate) {
+      btnAnimate.onclick = () => {
+        if (!currentWriter) return;
+        try { currentWriter.cancelQuiz(); } catch (e) {}
+        currentWriter.animateCharacter();
+        if (hwStatus) hwStatus.textContent = 'Đang vẽ nét...';
+      };
+    }
+
+    if (btnQuiz) {
+      btnQuiz.onclick = () => {
+        if (!currentWriter) return;
+        if (hwStatus) hwStatus.textContent = '✏️ Hãy vẽ nét theo thứ tự...';
+        currentWriter.quiz({
+          onMistake: (strokeData) => {
+            if (hwStatus) hwStatus.textContent = `Nét ${strokeData.strokeNum + 1}: Sai! Thử lại (${strokeData.mistakesOnStroke} lần)`;
+          },
+          onCorrectStroke: (strokeData) => {
+            if (hwStatus) hwStatus.textContent = `✅ Nét ${strokeData.strokeNum + 1} đúng! (${strokeData.totalMistakes} lỗi)`;
+          },
+          onComplete: (summary) => {
+            if (hwStatus) hwStatus.textContent = `🎉 Hoàn thành! Tổng lỗi: ${summary.totalMistakes}`;
+          }
+        });
+      };
+    }
+
+    if (btnStop) {
+      btnStop.onclick = () => {
+        if (!currentWriter) return;
+        try { currentWriter.cancelQuiz(); } catch (e) {}
+        currentWriter.hideCharacter();
+        currentWriter.showOutline();
+        if (hwStatus) hwStatus.textContent = 'Đã dừng.';
+      };
+    }
+
     openModal('modal-char-detail');
 
     if (window.HanziWriter && hwTarget) {
@@ -137,18 +181,21 @@
               });
           },
           onLoadCharDataSuccess: () => {
+            if (hwStatus) hwStatus.textContent = 'Đang vẽ nét...';
             currentWriter.animateCharacter();
           },
           onLoadCharDataError: () => {
             if (hwTarget) {
               hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;
             }
+            if (hwStatus) hwStatus.textContent = 'Chữ cổ/chưa có vector nét';
           }
         });
       } catch (err) {
         if (hwTarget) {
           hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;
         }
+        if (hwStatus) hwStatus.textContent = 'Chưa thể tải nét';
       }
     } else if (hwTarget) {
       hwTarget.innerHTML = `<span style="font-family:var(--font-hanzi);font-size:3.6rem;color:var(--gold-lt)">${char}</span>`;

@@ -352,8 +352,16 @@
       <button class="modal-close-btn" id="btn-close-char-modal" aria-label="Đóng">✕</button>
 
       <div class="modal-char-header">
-        <div class="modal-char-display">
-          <div class="char-hanziwriter-wrap" id="char-hw-target"></div>
+        <div class="modal-char-display-wrap">
+          <div class="modal-char-display">
+            <div class="char-hanziwriter-wrap" id="char-hw-target"></div>
+          </div>
+          <div class="hw-controls">
+            <button class="hw-btn hw-btn-animate" id="btn-hw-animate" title="Chạy hoạt họa nét bút thuận">▶ Xem nét</button>
+            <button class="hw-btn hw-btn-quiz" id="btn-hw-quiz" title="Tự luyện vẽ theo thứ tự nét">✏️ Luyện viết</button>
+            <button class="hw-btn hw-btn-stop" id="btn-hw-stop" title="Dừng vẽ nét">⏹ Dừng</button>
+          </div>
+          <div class="hw-status-label" id="hw-status-label">Bấm ▶ để xem thứ tự nét</div>
         </div>
         <div class="modal-char-meta">
           <h2 id="modal-char-title" class="modal-char-sino">—</h2>

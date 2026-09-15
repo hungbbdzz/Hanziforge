@@ -1300,6 +1300,57 @@ body::before {
   display: block;
 }
 
+.modal-char-display-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.hw-controls {
+  display: flex;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.hw-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.28rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: var(--t-fast);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hw-btn:hover {
+  color: var(--gold-lt);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.hw-btn-quiz:hover {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.hw-status-label {
+  font-size: 0.72rem;
+  color: var(--gold-lt);
+  text-align: center;
+  max-width: 140px;
+  min-height: 1.1rem;
+  line-height: 1.25;
+}
+
 .modal-char-meta { flex: 1; }
 .modal-char-sino {
   font-family: var(--font-display);
