@@ -147,10 +147,10 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 | **Tuần 1** | 18/08/2026 | **Ch.1: Tổng quan AI** — Khởi tạo scaffold HTML5/CSS3, bố cục 3 cột | `feat: initial project scaffold` | ✅ Hoàn thành |
 | **Tuần 2** | 25/08/2026 | **Ch.1 Lab** — Điều hướng Tab, hệ thống Modal, toggle giản/phồn | `feat: add app controller — tab navigation` | ✅ Hoàn thành |
 | **Tuần 3** | 01/09/2026 | **Ch.2: Prompt Engineering** — Bảng 96 bộ thủ, canvas 2D kéo thả | `feat: add radical palette, canvas workspace` | ✅ Hoàn thành |
-| **Tuần 4** | 08/09/2026 | **Ch.3: Đặc tả PRD & Kiến trúc** — Lọc bộ thủ khả dụng, 24 demo recipes | `feat: filter craftable radicals on UI, add README` | 🚀 **Hiện tại** |
-| **Tuần 5** | 15/09/2026 | **Ch.4: Hoạt họa nét viết** — Tích hợp thư viện HanziWriter stroke animation | `feat: integrate hanzi-writer animations` | ⏳ Sắp tới |
-| **Tuần 6** | 22/09/2026 | **Ch.4 Lab** — Tích hợp bộ từ điển tiếng Việt CVDICT (122k mục) | `feat: integrate cvdict definitions` | ⏳ Sắp tới |
-| **Tuần 7** | 29/09/2026 | **Ch.5: Quản trị trạng thái** — Gamification XP, cấp độ, lưu LocalStorage | `feat: add state manager and persistence` | ⏳ Sắp tới |
+| **Tuần 4** | 08/09/2026 | **Ch.3: Đặc tả PRD & Kiến trúc** — Lọc bộ thủ khả dụng, 24 demo recipes | `feat: filter craftable radicals on UI, add README` | ✅ Hoàn thành |
+| **Tuần 5** | 15/09/2026 | **Ch.4: Hoạt họa nét viết** — Tích hợp thư viện HanziWriter stroke animation | `feat: integrate hanzi-writer animations` | ✅ Hoàn thành |
+| **Tuần 6** | 22/09/2026 | **Ch.4 Lab** — Tích hợp bộ từ điển tiếng Việt CVDICT (122k mục) | `feat: integrate cvdict definitions` | ✅ Hoàn thành |
+| **Tuần 7** | 29/09/2026 | **Ch.5: Quản trị trạng thái** — Gamification XP, cấp độ, lưu LocalStorage | `feat: add state manager and persistence` | 🚀 **Hiện tại** |
 | **Tuần 8** | 06/10/2026 | **Ch.6: Big Data Pipeline** — Nạp runtime 8,660 công thức & 9,574 chữ Hán | `feat: full runtime data integration` | ⏳ Sắp tới |
 | **Tuần 11** | 27/10/2026 | **Ch.8: Đa phương tiện** — Web Speech API phát âm giọng đọc bản ngữ | `feat: add text-to-speech audio` | ⏳ Sắp tới |
 | **Tuần 12** | 03/11/2026 | **Ch.9: Tối ưu hiệu năng** — Đo kiểm 60-144 FPS HUD & PWA offline | `perf: optimize rendering, add pwa` | ⏳ Sắp tới |
@@ -161,6 +161,6 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 ## 🔮 Kế hoạch Giai đoạn Kế tiếp
 
 Các tính năng chưa tới tuần học sẽ được giữ ở trạng thái **Coming Soon** trên giao diện:
-1. **Tuần 5:** Tích hợp `HanziWriter` vào modal chi tiết chữ để hiển thị thứ tự nét viết động.
-2. **Tuần 6–7:** Hoàn thiện engine lưu trữ `state.js` để người dùng lưu tiến độ cày cấp XP và chữ đã ghép vào trình duyệt.
-3. **Tuần 8:** Nạp bộ dữ liệu lớn `hanzi_data_runtime.js` thay thế bộ demo 24 công thức hiện tại, mở khóa khả năng ghép tự do hơn 8,660 chữ Hán.
+1. **Tuần 8:** Nạp bộ dữ liệu lớn `hanzi_data_runtime.js` thay thế bộ demo 24 công thức hiện tại, mở khóa khả năng ghép tự do hơn 8,660 chữ Hán và đồng bộ biến thể Giản/Phồn.
+2. **Tuần 9–10:** Mở rộng 214 Bộ thủ Khang Hy, Smart Synergy và bàn ghép không gian 2D đa khối.
+3. **Tuần 11–12:** Web Audio FX phát âm giọng đọc bản ngữ, màn hình HUD đo FPS và đóng gói PWA offline.

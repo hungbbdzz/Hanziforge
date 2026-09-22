@@ -83,12 +83,12 @@ hanziforge/
 - [x] Web Speech API integration for native Chinese pronunciation
 
 ### Week 7 — 29/09/2026 | Ch.6: AI Coding
-**Planned commit:** `feat: game state — XP, levels, streak, save/load`
-- [ ] `js/state.js` — LocalStorage persistence
-- [ ] XP award on successful fusion (+10 XP)
-- [ ] Level calculation (every 100 XP = 1 level)
-- [ ] Daily streak tracker
-- [ ] Export / Import JSON save file
+**Commit:** `feat: game state — XP, levels, streak, save and load persistence`
+- [x] `js/state.js` — LocalStorage persistence
+- [x] XP award on successful fusion (+10 XP)
+- [x] Level calculation (every 100 XP = 1 level)
+- [x] Daily streak tracker
+- [x] Export / Import JSON save file
 
 ### Week 8 — 06/10/2026 | Ch.6 cont.
 **Planned commit:** `feat: full CVDICT data — 9,574 Hanzi with Vietnamese definitions`

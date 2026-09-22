@@ -588,18 +588,66 @@
     window.appState.subscribe(renderStats);
   }
 
-  // ── Save / Export buttons (Coming Soon) ───────────────────────────────────
-  document.getElementById('btn-save')?.addEventListener('click', () => {
-    alert('Coming Soon — Tính năng lưu tiến độ đang được hoàn thiện!');
-  });
+  // ── Offline Save & Load File Management ──────────────────────────────────
+  const btnExport = document.getElementById('btn-export-save');
+  const btnImport = document.getElementById('btn-import-save');
+  const btnSave   = document.getElementById('btn-save');
 
-  document.getElementById('btn-export-save')?.addEventListener('click', () => {
-    alert('Coming Soon — Tính năng xuất dữ liệu đang được hoàn thiện!');
-  });
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      if (window.appState) {
+        window.appState.saveState();
+        alert('💾 Tiến độ đã được lưu tự động vào trình duyệt (LocalStorage)!');
+      }
+    });
+  }
 
-  document.getElementById('btn-import-save')?.addEventListener('click', () => {
-    alert('Coming Soon — Tính năng nhập dữ liệu đang được hoàn thiện!');
-  });
+  if (btnExport) {
+    btnExport.addEventListener('click', () => {
+      if (window.appState) {
+        const res = window.appState.exportSaveFile();
+        if (res.success) {
+          alert('💾 Đã xuất file lưu tiến độ hanziforge_save.json thành công!');
+        } else {
+          alert('Lỗi khi xuất file lưu: ' + res.error);
+        }
+      }
+    });
+  }
+
+  if (btnImport) {
+    btnImport.addEventListener('click', () => {
+      let input = document.getElementById('save-file-input');
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.id = 'save-file-input';
+        input.accept = '.json';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+      }
+      input.value = '';
+      input.onchange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const content = evt.target?.result;
+          if (typeof content === 'string' && window.appState) {
+            const res = window.appState.importSaveFile(content);
+            if (res.success) {
+              alert(`🎉 Nạp bản lưu thành công! Đã khôi phục ${res.count} chữ Hán đã mở khóa.`);
+              renderStats();
+            } else {
+              alert('❌ Lỗi khi đọc file lưu: ' + res.error);
+            }
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+  }
 
   // ── Expose global API for other modules ──────────────────────────────────
   window.HanziForge = window.HanziForge || {};
