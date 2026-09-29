@@ -76,10 +76,19 @@ hanziforge/
 ├── ROADMAP.md            # Lộ trình phát triển qua các tuần
 ├── css/
 │   └── style.css         # Toàn bộ Design System, animations, layout
-└── js/
-    ├── app.js            # Điều hướng tab, quản trị Modal, trạng thái cơ sở
-    ├── radicals.js       # Dữ liệu bộ thủ Khang Hy, bộ lọc Palette, Modal chi tiết
-    └── builder.js        # Engine phân tích không gian 2D, thuật toán dung hợp & Codex
+├── js/
+│   ├── app.js            # Điều hướng tab, quản trị Modal, trạng thái cơ sở
+│   ├── radicals.js       # Dữ liệu bộ thủ Khang Hy, bộ lọc Palette, Modal chi tiết
+│   ├── builder.js        # Engine phân tích không gian 2D, thuật toán dung hợp & Codex
+│   └── state.js          # Engine lưu trữ trạng thái người chơi & LocalStorage
+├── data/
+│   ├── hanzi_data_runtime.js # Bộ dữ liệu runtime 9.574 chữ Hán & 8.660 công thức
+│   ├── chinese_variants.js   # Bảng đối ứng Giản thể ↔ Phồn thể
+│   ├── hsk_etymology.js      # Dữ liệu HSK và phân tích từ nguyên
+│   └── CVDICT.u8             # Từ điển Hán - Việt tiêu chuẩn (122.627 mục từ)
+└── scripts/
+    ├── build_data.ps1        # Pipeline xử lý dữ liệu ngôn ngữ học tự động
+    └── export_runtime.ps1    # Script xuất gói runtime JS tối ưu hóa
 ```
 
 ---
@@ -150,10 +159,12 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 | **Tuần 4** | 08/09/2026 | **Ch.3: Đặc tả PRD & Kiến trúc** — Lọc bộ thủ khả dụng, 24 demo recipes | `feat: filter craftable radicals on UI, add README` | ✅ Hoàn thành |
 | **Tuần 5** | 15/09/2026 | **Ch.4: Hoạt họa nét viết** — Tích hợp thư viện HanziWriter stroke animation | `feat: integrate hanzi-writer animations` | ✅ Hoàn thành |
 | **Tuần 6** | 22/09/2026 | **Ch.4 Lab** — Tích hợp bộ từ điển tiếng Việt CVDICT (122k mục) | `feat: integrate cvdict definitions` | ✅ Hoàn thành |
-| **Tuần 7** | 29/09/2026 | **Ch.5: Quản trị trạng thái** — Gamification XP, cấp độ, lưu LocalStorage | `feat: add state manager and persistence` | 🚀 **Hiện tại** |
-| **Tuần 8** | 06/10/2026 | **Ch.6: Big Data Pipeline** — Nạp runtime 8,660 công thức & 9,574 chữ Hán | `feat: full runtime data integration` | ⏳ Sắp tới |
-| **Tuần 11** | 27/10/2026 | **Ch.8: Đa phương tiện** — Web Speech API phát âm giọng đọc bản ngữ | `feat: add text-to-speech audio` | ⏳ Sắp tới |
-| **Tuần 12** | 03/11/2026 | **Ch.9: Tối ưu hiệu năng** — Đo kiểm 60-144 FPS HUD & PWA offline | `perf: optimize rendering, add pwa` | ⏳ Sắp tới |
+| **Tuần 7** | 29/09/2026 | **Ch.5: Quản trị trạng thái** — Gamification XP, cấp độ, lưu LocalStorage | `feat: complete game state persistence engine` | ✅ Hoàn thành |
+| **Tuần 8** | 06/10/2026 | **Ch.6: Big Data Pipeline** — Nạp runtime 8,660 công thức & 9,574 chữ Hán | `feat: full CVDICT data — 9,574 Hanzi with Vietnamese definitions and 8,660 recipes` | 🚀 **Hiện tại** |
+| **Tuần 9** | 13/10/2026 | **Ch.7: Tối ưu UI & Smart Synergy** — 214 Bộ thủ Khang Hy, bộ lọc tương thích | `feat: 214 KangXi radicals & smart synergy` | ⏳ Sắp tới |
+| **Tuần 10** | 20/10/2026 | **Ch.8: Sách công thức 8.660 chữ** — Bàn ghép 2D đa khối & kiểm thử dữ liệu | `feat: recipe book 8,660 items & 2D canvas` | ⏳ Sắp tới |
+| **Tuần 11** | 27/10/2026 | **Ch.9: Đa phương tiện & Tài liệu** — Web Audio FX, FPS HUD & System Docs | `feat: web audio fx, fps hud & system docs` | ⏳ Sắp tới |
+| **Tuần 12** | 03/11/2026 | **Ch.10: Tối ưu hiệu năng** — Đo kiểm 60-144 FPS HUD & PWA offline | `perf: optimize rendering, add pwa` | ⏳ Sắp tới |
 | **Tuần 13** | 10/11/2026 | **Nghiệm thu cuối kỳ** — Hoàn thiện toàn bộ sản phẩm hoàn chỉnh | `release: finalize hanziforge platform` | ⏳ Đích đến |
 
 ---
@@ -161,6 +172,6 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 ## 🔮 Kế hoạch Giai đoạn Kế tiếp
 
 Các tính năng chưa tới tuần học sẽ được giữ ở trạng thái **Coming Soon** trên giao diện:
-1. **Tuần 8:** Nạp bộ dữ liệu lớn `hanzi_data_runtime.js` thay thế bộ demo 24 công thức hiện tại, mở khóa khả năng ghép tự do hơn 8,660 chữ Hán và đồng bộ biến thể Giản/Phồn.
-2. **Tuần 9–10:** Mở rộng 214 Bộ thủ Khang Hy, Smart Synergy và bàn ghép không gian 2D đa khối.
-3. **Tuần 11–12:** Web Audio FX phát âm giọng đọc bản ngữ, màn hình HUD đo FPS và đóng gói PWA offline.
+1. **Tuần 9:** Mở rộng toàn diện 214 Bộ thủ Khang Hy phân loại theo số nét, cơ chế gợi ý ghép thông minh (Smart Synergy) và bộ lọc nguyên liệu tương thích.
+2. **Tuần 10:** Sách công thức mở rộng 8.660 chữ Hán, bàn ghép Điền Tự Cách 2D đa khối và tối ưu thuật toán phân tích hình học không gian.
+3. **Tuần 11–12:** Hiệu ứng âm thanh Web Audio FX tương tác, phát âm bản ngữ TTS, màn hình HUD đo FPS và đóng gói PWA offline.

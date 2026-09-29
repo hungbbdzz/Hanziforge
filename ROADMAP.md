@@ -91,10 +91,10 @@ hanziforge/
 - [x] Export / Import JSON save file
 
 ### Week 8 — 06/10/2026 | Ch.6 cont.
-**Planned commit:** `feat: full CVDICT data — 9,574 Hanzi with Vietnamese definitions`
-- [ ] Integrate `hanzi_data_runtime.js` (214 radicals + 8,660 recipes + 9,574 Hanzi)
-- [ ] Bi-directional Simplified ↔ Traditional toggle (wire `chinese_variants.js`)
-- [ ] Unlocked characters grid in Progress section
+**Commit:** `feat: full CVDICT data — 9,574 Hanzi with Vietnamese definitions and 8,660 recipes`
+- [x] Integrate `hanzi_data_runtime.js` (214 radicals + 8,660 recipes + 9,574 Hanzi)
+- [x] Bi-directional Simplified ↔ Traditional toggle (wire `chinese_variants.js`)
+- [x] Linguistic pipeline scripts and raw Chinese-Vietnamese corpora
 
 ### Week 9 — 13/10/2026 | Ch.7: Code Refactoring
 **Planned commit:** `refactor: eliminate inline styles, restructure modules`
