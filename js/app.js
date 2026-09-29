@@ -551,10 +551,16 @@
     });
   });
 
-  // ── Base State Display ────────────────────────────────────────────────────
-  const baseState = { streak: 1, xp: 0, level: 1, unlocked: 0, recipes: 0 };
+  // ── State Display & Synchronization ──────────────────────────────────────
+  function renderStats() {
+    const s = window.appState ? {
+      streak: window.appState.state.streakDays || 1,
+      xp: window.appState.state.xp || 0,
+      level: window.appState.getUserLevel().level,
+      unlocked: (window.appState.state.completedCharacters || []).length,
+      recipes: (window.appState.state.completedCharacters || []).length
+    } : { streak: 1, xp: 0, level: 1, unlocked: 0, recipes: 0 };
 
-  function renderStats(s) {
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
@@ -577,7 +583,10 @@
     if (fill) fill.style.width = `${Math.min(100, (s.xp / nextXp) * 100)}%`;
   }
 
-  renderStats(baseState);
+  renderStats();
+  if (window.appState) {
+    window.appState.subscribe(renderStats);
+  }
 
   // ── Save / Export buttons (Coming Soon) ───────────────────────────────────
   document.getElementById('btn-save')?.addEventListener('click', () => {
