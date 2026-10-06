@@ -82,7 +82,7 @@ hanziforge/
 - [x] 7 Stroke order rules guide and character etymology tab
 - [x] Web Speech API integration for native Chinese pronunciation
 
-### Week 7 — 29/09/2026 | Ch.6: AI Coding
+### Week 7 — 22/09/2026 | Ch.6: AI Coding
 **Commit:** `feat: game state — XP, levels, streak, save and load persistence`
 - [x] `js/state.js` — LocalStorage persistence
 - [x] XP award on successful fusion (+10 XP)
@@ -90,39 +90,39 @@ hanziforge/
 - [x] Daily streak tracker
 - [x] Export / Import JSON save file
 
-### Week 8 — 06/10/2026 | Ch.6 cont.
+### Week 8 — 29/09/2026 | Ch.6 cont.
 **Commit:** `feat: full CVDICT data — 9,574 Hanzi with Vietnamese definitions and 8,660 recipes`
 - [x] Integrate `hanzi_data_runtime.js` (214 radicals + 8,660 recipes + 9,574 Hanzi)
 - [x] Bi-directional Simplified ↔ Traditional toggle (wire `chinese_variants.js`)
 - [x] Linguistic pipeline scripts and raw Chinese-Vietnamese corpora
 
-### Week 9 — 13/10/2026 | Ch.7: Code Refactoring
-**Planned commit:** `refactor: eliminate inline styles, restructure modules`
-- [ ] Remove all `style="..."` attributes from HTML and JS
-- [ ] Separate engine logic from UI rendering in `builder.js`
-- [ ] Add JSDoc comments to all public functions
-- [ ] Code smell detection and cleanup
+### Week 9 — 06/10/2026 | Ch.7: Code Refactoring
+**Commit:** `feat: implement smart synergy partner highlight and compatible ingredient filter`
+- [x] Remove inline styles and restructure palette component in `css/style.css`
+- [x] Full 214 KangXi radicals dataset categorized by stroke groups (1–17 strokes)
+- [x] Smart synergy partner highlight index for compatible ingredients
+- [x] Code optimization and component style modularization
 
-### Week 10 — 20/10/2026 | Ch.8: Software Testing
+### Week 10 — 13/10/2026 | Ch.8: Software Testing
 **Planned commit:** `test: unit tests for spatial engine and data validation`
 - [ ] Unit tests for `SpatialGeometry` layout detection
 - [ ] Data integrity checks for recipe map
 - [ ] Test cases for edge cases (3-token pyramid, overlaid characters)
 
-### Week 11 — 27/10/2026 | Ch.9: Technical Documentation
+### Week 11 — 20/10/2026 | Ch.9: Technical Documentation
 **Planned commit:** `feat: bilingual sentence corpus + audio pronunciation`
 - [ ] Integrate `sentences_db.js` — 253,427 parallel CN-VI sentences
 - [ ] `js/audio.js` — Web Speech API pronunciation
 - [ ] Finalize `HANZIFORGE_SYSTEM_DOCS.md`
 
-### Week 12 — 03/11/2026 | Polish
+### Week 12 — 27/10/2026 | Polish
 **Planned commit:** `feat: PWA + performance optimization`
 - [ ] Service Worker for offline capability
 - [ ] `js/fps_meter.js` — real-time FPS monitoring HUD
 - [ ] CSS containment optimization
 - [ ] PWA manifest + installable on desktop
 
-### Week 13 — 10/11/2026 | Final Prep
+### Week 13 — 03/11/2026 | Final Prep
 **Planned commit:** `chore: final polish, README update, presentation prep`
 - [ ] Update README with all features
 - [ ] Final UI polish and bug fixes
