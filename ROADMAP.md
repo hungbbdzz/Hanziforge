@@ -104,10 +104,11 @@ hanziforge/
 - [x] Code optimization and component style modularization
 
 ### Week 10 — 13/10/2026 | Ch.8: Software Testing
-**Planned commit:** `test: unit tests for spatial engine and data validation`
-- [ ] Unit tests for `SpatialGeometry` layout detection
-- [ ] Data integrity checks for recipe map
-- [ ] Test cases for edge cases (3-token pyramid, overlaid characters)
+**Commit:** `feat: complete 2D spatial canvas fusion engine with full 8660 recipe catalogue`
+- [x] Multi-token spatial bonding physics and freeform canvas drag
+- [x] 10 IDS layout topological geometry detection engine
+- [x] Recursive compound character crafting support
+- [x] Interactive Codex recipe book modal with search and locked/unlocked filters
 
 ### Week 11 — 20/10/2026 | Ch.9: Technical Documentation
 **Planned commit:** `feat: bilingual sentence corpus + audio pronunciation`
