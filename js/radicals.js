@@ -1,305 +1,345 @@
-/**
- * HanziForge — radicals.js
- * 214 KangXi Radicals: palette, browser, search/filter
- * Built with AI assistance (Google Gemini)
- *
- * Current: 96 radicals (strokes 1–5), full search & filter, modal hooks
- * See ROADMAP.md for weekly feature additions
- */
+// HanziForge - Radical Learning Explorer Module
 
-(function () {
-  'use strict';
+class RadicalExplorer {
+  constructor() {
+    this.radicals = window.RADICALS_DATA || [];
+    this.currentCategory = 'all';
+    this.searchQuery = '';
 
-  // ── Radical Dataset ───────────────────────────────────────────────────────
-  // Source: Unicode Unihan (kVietnamese) + MakeMeAHanzi decomposition
-  // Format: [hanzi, sinoVietnamese, pinyin, strokes, meaning]
-  const RADICALS_DATA = [
-    // 1 stroke
-    ['一','Nhất','yī',1,'Một'],['丨','Côn','gǔn',1,'Đường thẳng'],['丶','Chủ','zhǔ',1,'Chấm'],
-    ['丿','Phiệt','piě',1,'Nét phẩy'],['乙','Ất','yǐ',1,'Thứ hai (Can Chi)'],['亅','Quyết','jué',1,'Nét móc'],
-    // 2 strokes
-    ['二','Nhị','èr',2,'Hai'],['亠','Đầu','tóu',2,'Nắp, mũ'],['人','Nhân','rén',2,'Người'],
-    ['儿','Nhân','ér',2,'Chân người'],['入','Nhập','rù',2,'Vào'],['八','Bát','bā',2,'Tám'],
-    ['冂','Quynh','jiōng',2,'Vùng xa'],['冖','Mịch','mì',2,'Tấm che'],['冫','Băng','bīng',2,'Băng đá'],
-    ['几','Kỷ','jī',2,'Bàn nhỏ'],['凵','Khảm','kǎn',2,'Chỗ trũng'],['刀','Đao','dāo',2,'Dao'],
-    ['力','Lực','lì',2,'Sức mạnh'],['勺','Chước','sháo',2,'Thìa'],['又','Hựu','yòu',2,'Lại, tay phải'],
-    ['匚','Phương','fāng',2,'Khay đựng'],['勹','Bao','bāo',2,'Bọc lại'],
-    // 3 strokes
-    ['口','Khẩu','kǒu',3,'Miệng'],['囗','Vi','wéi',3,'Vây quanh'],['土','Thổ','tǔ',3,'Đất'],
-    ['士','Sĩ','shì',3,'Sĩ quan'],['夕','Tịch','xī',3,'Buổi tối'],['大','Đại','dà',3,'To lớn'],
-    ['女','Nữ','nǚ',3,'Phụ nữ'],['子','Tử','zǐ',3,'Con trẻ'],['宀','Miên','mián',3,'Mái nhà'],
-    ['寸','Thốn','cùn',3,'Tấc'],['小','Tiểu','xiǎo',3,'Nhỏ bé'],['尸','Thi','shī',3,'Xác chết'],
-    ['山','Sơn','shān',3,'Núi'],['川','Xuyên','chuān',3,'Sông ngòi'],['工','Công','gōng',3,'Thợ'],
-    ['己','Kỷ','jǐ',3,'Bản thân'],['巾','Cân','jīn',3,'Khăn vải'],['广','Nghiễm','yǎn',3,'Mái hiên'],
-    ['弓','Cung','gōng',3,'Cây cung'],['彡','Sam','shān',3,'Lông tua'],['忄','Tâm','xīn',3,'Tim (biến thể)'],
-    ['门','Môn','mén',3,'Cửa ngõ'],['辶','Sước','chuò',3,'Bước đi'],['干','Can','gàn',3,'Cái khiên, can thiệp'],
-    // 4 strokes
-    ['心','Tâm','xīn',4,'Trái tim'],['戈','Qua','gē',4,'Giáo mác'],['户','Hộ','hù',4,'Cửa, hộ gia đình'],
-    ['手','Thủ','shǒu',4,'Bàn tay'],['支','Chi','zhī',4,'Cành nhánh'],['文','Văn','wén',4,'Chữ viết'],
-    ['斤','Cân','jīn',4,'Rìu'],['方','Phương','fāng',4,'Vuông'],['无','Vô','wú',4,'Không có'],
-    ['日','Nhật','rì',4,'Mặt trời'],['曰','Viết','yuē',4,'Nói rằng'],['月','Nguyệt','yuè',4,'Mặt trăng'],
-    ['木','Mộc','mù',4,'Cây gỗ'],['欠','Khiếm','qiàn',4,'Thiếu, ngáp'],['止','Chỉ','zhǐ',4,'Dừng lại'],
-    ['水','Thủy','shuǐ',4,'Nước'],['火','Hỏa','huǒ',4,'Lửa'],['爪','Trảo','zhǎo',4,'Móng vuốt'],
-    ['父','Phụ','fù',4,'Cha'],['片','Phiến','piàn',4,'Mảnh tấm'],['牙','Nha','yá',4,'Răng ngà'],
-    ['牛','Ngưu','niú',4,'Con bò'],['犬','Khuyển','quǎn',4,'Con chó'],['王','Vương','wáng',4,'Vua'],
-    ['气','Khí','qì',4,'Hơi, khí'],['爻','Hào','yáo',4,'Quẻ bói'],
-    // 5 strokes
-    ['玉','Ngọc','yù',5,'Đá quý'],['瓜','Qua','guā',5,'Dưa'],['瓦','Ngõa','wǎ',5,'Ngói gốm'],
-    ['甘','Cam','gān',5,'Ngọt ngào'],['生','Sinh','shēng',5,'Sinh ra'],['用','Dụng','yòng',5,'Sử dụng'],
-    ['田','Điền','tián',5,'Ruộng đồng'],['疒','Nạch','nè',5,'Bệnh tật'],['白','Bạch','bái',5,'Trắng'],
-    ['皮','Bì','pí',5,'Da, vỏ'],['目','Mục','mù',5,'Mắt'],['矛','Mâu','máo',5,'Giáo dài'],
-    ['矢','Thỉ','shǐ',5,'Mũi tên'],['石','Thạch','shí',5,'Đá'],['示','Thị','shì',5,'Thần, hiển thị'],
-    ['禾','Hòa','hé',5,'Lúa mì'],['穴','Huyệt','xué',5,'Hang hốc'],['立','Lập','lì',5,'Đứng thẳng'],
-    ['糸','Mịch','mì',5,'Sợi chỉ'],['网','Võng','wǎng',5,'Lưới bắt cá'],['羊','Dương','yáng',5,'Con dê'],
-    ['羽','Vũ','yǔ',5,'Lông vũ'],['老','Lão','lǎo',5,'Già lão'],['而','Nhi','ér',5,'Mà, và'],
-    ['耳','Nhĩ','ěr',5,'Tai'],['聿','Duật','yù',5,'Bút lông'],['肉','Nhục','ròu',5,'Thịt'],
-    ['臣','Thần','chén',5,'Bề tôi, quan'],['自','Tự','zì',5,'Tự mình'],['至','Chí','zhì',5,'Đến nơi'],
-    ['臼','Cữu','jiù',5,'Cối giã gạo'],['舌','Thiệt','shé',5,'Lưỡi'],['舛','Suyễn','chuǎn',5,'Sai lầm'],
-    ['舟','Chu','zhōu',5,'Con thuyền'],['艮','Cấn','gèn',5,'Cứng nhắc'],['色','Sắc','sè',5,'Màu sắc'],
-    ['虍','Hổ','hǔ',5,'Con hổ (trên)'],['血','Huyết','xuè',5,'Máu'],['行','Hành','xíng',5,'Đi, hành động'],
-    ['丙','Bính','bǐng',5,'Thứ 3 Thiên Can'],
-    // 7 strokes
-    ['走','Tẩu','zǒu',7,'Chạy, đi bộ'],
-  ];
+    this.gridContainer = document.getElementById('radicals-grid-container');
+    this.searchInput = document.getElementById('radical-search-input');
+    this.filterButtons = document.querySelectorAll('.filter-btn');
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  let filterStrokes = 'all';
-  let searchQuery   = '';
+    // Modal elements
+    this.modal = document.getElementById('radical-detail-modal');
+    this.modalChar = document.getElementById('modal-rad-char');
+    this.modalName = document.getElementById('modal-rad-name');
+    this.modalPinyin = document.getElementById('modal-rad-pinyin');
+    this.modalMeaning = document.getElementById('modal-rad-meaning');
+    this.modalStrokes = document.getElementById('modal-rad-strokes');
+    this.modalDesc = document.getElementById('modal-rad-desc');
+    this.modalExamples = document.getElementById('modal-rad-examples');
+    this.modalCloseBtn = document.getElementById('btn-close-rad-modal');
+    this.modalLearnBtn = document.getElementById('btn-modal-learn-rad');
 
-  // ── Render Functions ──────────────────────────────────────────────────────
-  function getFiltered() {
-    return RADICALS_DATA.filter(r => {
-      // Stroke filter
-      if (filterStrokes !== 'all') {
-        if (filterStrokes === '5+') { if (r[3] < 5) return false; }
-        else { if (r[3] !== parseInt(filterStrokes)) return false; }
-      }
-      // Search
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        return r[0].includes(q) || r[1].toLowerCase().includes(q) ||
-               r[2].includes(q) || r[4].toLowerCase().includes(q);
-      }
-      return true;
-    });
+    window.radicalExplorer = this;
+
+    this.bindEvents();
+    this.render();
   }
 
-  function renderRadicalsGrid() {
-    const grid   = document.getElementById('radicals-grid');
-    const shownEl = document.getElementById('radicals-shown');
-    if (!grid) return;
+  bindEvents() {
+    if (this.searchInput) {
+      this.searchInput.addEventListener('input', (e) => {
+        this.searchQuery = e.target.value.toLowerCase().trim();
+        this.render();
+      });
+    }
 
-    const data = getFiltered();
-    if (shownEl) shownEl.textContent = data.length;
+    if (this.filterButtons) {
+      this.filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.filterButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          this.currentCategory = btn.dataset.category || 'all';
+          this.render();
+        });
+      });
+    }
 
-    grid.innerHTML = '';
-    if (data.length === 0) {
-      grid.innerHTML = '<p class="state-loading">Không tìm thấy bộ thủ phù hợp.</p>';
+    if (this.modal) {
+      this.modal.addEventListener('click', (e) => {
+        if (e.target === this.modal) this.closeModal();
+      });
+    }
+
+    if (this.gridContainer) {
+      this.gridContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.radical-card');
+        if (!card) return;
+        const ch = card.dataset.char;
+        const rad = this.radicals.find(r => r.character === ch);
+        if (rad) this.openModal(rad);
+      });
+    }
+  }
+
+  render() {
+    if (!this.gridContainer) return;
+    this.gridContainer.innerHTML = '';
+
+    const scriptMode = window.appState ? window.appState.getScriptMode() : 'simplified';
+
+    const filtered = this.radicals.filter(rad => {
+      const pair = window.getTradSimpPair ? window.getTradSimpPair(rad.character) : { simplified: rad.character, traditional: rad.character };
+      const displayChar = scriptMode === 'traditional' ? pair.traditional : pair.simplified;
+
+      const matchCategory = this.currentCategory === 'all' || rad.category === this.currentCategory;
+      const matchQuery = !this.searchQuery || 
+        rad.character.includes(this.searchQuery) ||
+        displayChar.includes(this.searchQuery) ||
+        pair.simplified.includes(this.searchQuery) ||
+        pair.traditional.includes(this.searchQuery) ||
+        rad.name.toLowerCase().includes(this.searchQuery) ||
+        rad.pinyin.toLowerCase().includes(this.searchQuery) ||
+        rad.meaning.toLowerCase().includes(this.searchQuery);
+      return matchCategory && matchQuery;
+    });
+
+    if (filtered.length === 0) {
+      this.gridContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-dim);">
+          <p style="font-size: 1.1rem;">Không tìm thấy bộ thủ nào phù hợp với từ khóa "${this.searchQuery}"</p>
+        </div>
+      `;
       return;
     }
 
-    data.forEach(r => {
+    const fragment = document.createDocumentFragment();
+    filtered.forEach(rad => {
+      const pair = window.getTradSimpPair ? window.getTradSimpPair(rad.character) : { simplified: rad.character, traditional: rad.character, isDifferent: false };
+      const displayChar = scriptMode === 'traditional' ? pair.traditional : pair.simplified;
+      const variantNote = pair.isDifferent
+        ? `<div class="rad-variant-note" style="font-size:0.75rem;color:var(--gold-primary);margin-top:2px;">${scriptMode === 'traditional' ? `Giản: ${pair.simplified}` : `Phồn: ${pair.traditional}`}</div>`
+        : '';
+
       const card = document.createElement('div');
-      card.className  = 'radical-card';
-      card.role       = 'listitem';
-      card.title      = `${r[0]} — ${r[1]} (${r[2]}) — ${r[4]}`;
-      card.dataset.hanzi  = r[0];
-      card.dataset.sino   = r[1];
-      card.dataset.pinyin = r[2];
-      card.dataset.strokes = r[3];
-      card.dataset.meaning = r[4];
+      card.className = 'radical-card';
+      card.dataset.char = rad.character;
       card.innerHTML = `
-        <div class="radical-char">${r[0]}</div>
-        <div class="radical-sino">${r[1]}</div>
-        <div class="radical-pinyin">${r[2]}</div>
-        <div class="radical-meaning">${r[4]}</div>
-        <div class="radical-strokes">${r[3]} nét</div>
+        <span class="rad-strokes">${rad.stroke_count} nét</span>
+        <div class="rad-char">${displayChar}</div>
+        ${variantNote}
+        <div class="rad-name">${rad.name}</div>
+        <div class="rad-pinyin">${rad.pinyin}</div>
+        <div class="rad-meaning">${rad.meaning}</div>
       `;
-      card.addEventListener('click', () => onRadicalCardClick(r));
-      grid.appendChild(card);
+      fragment.appendChild(card);
     });
+
+    this.gridContainer.appendChild(fragment);
   }
 
-  // ── Craftable Radicals in Demo ────────────────────────────────────────────
-  const CRAFTABLE_RADICAL_CHARS = new Set([
-    '人', '木', '日', '月', '女', '子', '火', '水', '口', '山',
-    '土', '心', '刀', '小', '大', '田', '力', '宀', '手', '目', '玉',
-    '囗', '门', '广', '疒', '走', '辶', '干', '斤', '丙', '凵', '匚', '勹'
-  ]);
+  openModal(rad) {
+    const scriptMode = window.appState ? window.appState.getScriptMode() : 'simplified';
+    const pair = window.getTradSimpPair ? window.getTradSimpPair(rad.character) : { simplified: rad.character, traditional: rad.character, isDifferent: false };
+    const displayChar = scriptMode === 'traditional' ? pair.traditional : pair.simplified;
 
-  let paletteTab     = 'demo'; // 'demo' | 'crafted' | 'synergy' | 'all'
-  let paletteQuery   = '';
-  let paletteStrokes = 'all';
+    window.soundEngine.playTap();
+    window.soundEngine.speakChinese(displayChar);
 
-  function renderPaletteTokens() {
-    const paletteEl      = document.getElementById('palette-tokens');
-    const countEl        = document.getElementById('palette-count');
-    const craftedCountEl = document.getElementById('crafted-count');
-    const synergyCountEl = document.getElementById('synergy-count');
-    if (!paletteEl) return;
+    if (this.modalChar) this.modalChar.textContent = displayChar;
+    if (this.modalName) this.modalName.textContent = `Bộ ${rad.name}`;
+    if (this.modalPinyin) this.modalPinyin.textContent = `Pinyin: ${rad.pinyin || ''}`;
+    if (this.modalMeaning) this.modalMeaning.textContent = `📖 Ý nghĩa: ${rad.meaning || ''}`;
+    if (this.modalStrokes) {
+      const variantText = pair.isDifferent ? ` • ${scriptMode === 'traditional' ? `Giản thể: ${pair.simplified}` : `Phồn thể: ${pair.traditional}`}` : '';
+      this.modalStrokes.textContent = `${rad.stroke_count || 1} nét cơ bản${variantText}`;
+    }
+    if (this.modalDesc) this.modalDesc.textContent = rad.description || '';
 
-    window.HanziForge = window.HanziForge || {};
-    const craftedList = window.HanziForge.craftedTokens || [];
-    const synergySet  = window.HanziForge.synergyRadicals || new Set();
+    // ── HanziWriter Stroke Order Integration for Radicals ──
+    const hwTarget   = document.getElementById('hanziwriter-rad-target');
+    const hwWrap     = document.getElementById('rad-stroke-order-wrap');
+    const hwStatus   = document.getElementById('rad-hw-status');
+    const btnAnimate = document.getElementById('btn-rad-hw-animate');
+    const btnQuiz    = document.getElementById('btn-rad-hw-quiz');
+    const btnStop    = document.getElementById('btn-rad-hw-stop');
 
-    if (craftedCountEl) craftedCountEl.textContent = craftedList.length;
-    if (synergyCountEl) synergyCountEl.textContent = synergySet.size;
+    if (window._hwRadInstance) {
+      try { window._hwRadInstance.cancelQuiz(); } catch(e) {}
+      window._hwRadInstance = null;
+    }
+    if (hwTarget) hwTarget.innerHTML = '';
 
-    let baseData = [];
-    if (paletteTab === 'demo') {
-      baseData = RADICALS_DATA.filter(r => CRAFTABLE_RADICAL_CHARS.has(r[0]));
-    } else if (paletteTab === 'crafted') {
-      baseData = craftedList.map(c => [c.char, c.sino, c.pinyin, c.strokes || 0, c.meaning]);
-    } else if (paletteTab === 'synergy') {
-      if (synergySet.size === 0) {
-        baseData = [];
+    if (hwWrap && window.HanziWriter) {
+      hwWrap.style.display = 'flex';
+      if (hwStatus) hwStatus.textContent = 'Đang tải hoạt họa nét...';
+
+      try {
+        const writer = HanziWriter.create('hanziwriter-rad-target', displayChar, {
+          width: 120,
+          height: 120,
+          padding: 5,
+          strokeColor:      '#F59E0B',   // amber gold
+          outlineColor:     'rgba(255,255,255,0.12)',
+          radicalColor:     '#10B981',   // jade
+          drawingColor:     '#FFFFFF',
+          strokeAnimationSpeed: 0.8,
+          delayBetweenStrokes: 300,
+          showCharacter: false,
+          showOutline: true,
+          charDataLoader: (charToLoad, onComplete, onError) => {
+            // 1. Try standard simplified/common data
+            fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${encodeURIComponent(charToLoad)}.json`)
+              .then(res => {
+                if (res.ok) return res.json();
+                throw new Error("Not in standard set");
+              })
+              .then(data => onComplete(data))
+              .catch(() => {
+                // 2. Try traditional data repository
+                fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data-traditional@latest/${encodeURIComponent(charToLoad)}.json`)
+                  .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error("Not in traditional set");
+                  })
+                  .then(data => onComplete(data))
+                  .catch(err => {
+                    if (onError) onError(err);
+                  });
+              });
+          },
+          onLoadCharDataSuccess: () => {
+            if (hwStatus) hwStatus.textContent = 'Bấm ▶ để xem thứ tự nét';
+            writer.animateCharacter();
+            if (hwStatus) hwStatus.textContent = 'Đang vẽ nét...';
+          },
+          onLoadCharDataError: () => {
+            if (hwStatus) hwStatus.textContent = 'Bộ thủ cổ/hiếm (chưa có dữ liệu vector nét)';
+          }
+        });
+        window._hwRadInstance = writer;
+
+        if (btnAnimate) btnAnimate.onclick = () => {
+          try { writer.cancelQuiz(); } catch(e) {}
+          writer.animateCharacter();
+          if (hwStatus) hwStatus.textContent = 'Đang vẽ...';
+        };
+        if (btnQuiz) btnQuiz.onclick = () => {
+          writer.quiz({
+            onMistake: (strokeData) => {
+              if (hwStatus) hwStatus.textContent = `Nét ${strokeData.strokeNum + 1}: Thử lại! (${strokeData.mistakesOnStroke} lỗi)`;
+            },
+            onCorrectStroke: (strokeData) => {
+              if (hwStatus) hwStatus.textContent = `✅ Nét ${strokeData.strokeNum + 1} đúng! (${strokeData.totalMistakes} lỗi tổng)`;
+            },
+            onComplete: (summary) => {
+              if (hwStatus) hwStatus.textContent = `🎉 Hoàn thành! Tổng lỗi: ${summary.totalMistakes}`;
+            }
+          });
+          if (hwStatus) hwStatus.textContent = '✏️ Hãy vẽ nét theo thứ tự...';
+        };
+        if (btnStop) btnStop.onclick = () => {
+          try { writer.cancelQuiz(); } catch(e) {}
+          writer.hideCharacter();
+          writer.showOutline();
+          if (hwStatus) hwStatus.textContent = 'Đã dừng.';
+        };
+      } catch(err) {
+        if (hwWrap) hwWrap.style.display = 'none';
+      }
+    } else if (hwWrap) {
+      hwWrap.style.display = 'none';
+    }
+
+    // Dynamic Compound Characters lookup from recipes map (Prioritize HSK 1-6 words & exclude fragments)
+    if (this.modalExamples) {
+      this.modalExamples.innerHTML = '';
+      const recipesMap = window.CRAFTING_RECIPES_MAP || {};
+      const charDb = window.CHARACTERS_DB || {};
+
+      // Filter out non-character radical fragments (e.g. 扌, ⺮, ⺡, 刂, 阝, etc.)
+      const pureChars = Object.values(recipesMap).filter(r => {
+        if (!r.parts || !r.parts.includes(rad.character) || r.character === rad.character) return false;
+        const code = r.character.charCodeAt(0);
+        if (code >= 0x2E80 && code <= 0x2EFF) return false;
+        if (['扌', '⺮', '⺡', '刂', '阝', '亻', '冫', '氵', '灬', '犭', '礻', '衤'].includes(r.character)) return false;
+        return true;
+      });
+
+      // Sort by HSK level (HSK 1-6 standard words first)
+      pureChars.sort((a, b) => {
+        const hskA = window.getHskInfo ? window.getHskInfo(a.character).code : 7;
+        const hskB = window.getHskInfo ? window.getHskInfo(b.character).code : 7;
+        if (hskA !== hskB) return hskA - hskB;
+        return (a.character.length) - (b.character.length);
+      });
+
+      const related = pureChars.slice(0, 6);
+
+      if (related.length === 0) {
+        this.modalExamples.innerHTML = '<span style="color:var(--text-dim);font-size:0.85rem;grid-column:1/-1;">Chưa có chữ ghép phổ biến.</span>';
       } else {
-        baseData = RADICALS_DATA.filter(r => synergySet.has(r[0]));
+        related.forEach(rec => {
+          const dbInfo = charDb[rec.character] || {};
+          const rawSino = dbInfo.sino_vietnamese || rec.sino_vietnamese || '';
+          const hasValidSino = window.isValidSinoVietnamese ? window.isValidSinoVietnamese(rawSino, rec.character) : (rawSino && rawSino !== rec.character);
+          const sinoText = hasValidSino ? rawSino.toUpperCase() : '';
+          const cleanPinyin = window.convertNumberedPinyinToAccents ? window.convertNumberedPinyinToAccents(rec.pinyin || dbInfo.pinyin || '') : (rec.pinyin || '');
+          const cleanMeaning = (rec.meaning || dbInfo.meaning || '').replace(/\(dạng kết hợp\)\s*/g, '').replace(/^\((.+)\)$/, '$1').trim();
+
+          const chip = document.createElement('div');
+          chip.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.35rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          `;
+          chip.innerHTML = `
+            <span style="font-family:var(--font-hanzi);font-size:1.5rem;color:var(--gold-light);line-height:1;font-weight:700;">${rec.character}</span>
+            <div style="font-size:0.75rem;line-height:1.2;overflow:hidden;">
+              <div style="font-weight:700;color:#fff;">${sinoText || rec.character} <span style="color:var(--gold-primary);font-size:0.7rem;">(${cleanPinyin})</span></div>
+              <div style="color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${cleanMeaning || ''}</div>
+            </div>
+          `;
+          chip.title = `Bấm để tra từ điển & từ ghép của chữ「${rec.character}」`;
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (window.openVocabModal) {
+              window.openVocabModal(rec.character);
+            } else if (window.soundEngine) {
+              window.soundEngine.speakChinese(rec.character);
+            }
+          });
+          this.modalExamples.appendChild(chip);
+        });
       }
-    } else {
-      baseData = RADICALS_DATA;
     }
 
-    // Filter by stroke chips
-    if (paletteStrokes !== 'all') {
-      baseData = baseData.filter(r => {
-        const s = r[3];
-        if (paletteStrokes === '5+') return s >= 5;
-        if (paletteStrokes === '1-2') return s <= 2;
-        return s === parseInt(paletteStrokes);
-      });
+    // Quick craft button: switch to builder tab & place radical
+    const craftBtn = document.getElementById('btn-modal-craft-with-rad');
+    if (craftBtn) {
+      craftBtn.onclick = () => {
+        this.closeModal();
+        const builderTabBtn = document.querySelector('[data-tab="builder"]');
+        if (builderTabBtn) builderTabBtn.click();
+
+        if (window.hanziBuilder) {
+          window.hanziBuilder.addTokenToCanvas(rad.character, rad.name || rad.character, rad.pinyin || '', 50, 50);
+          window.showToast(`Đã đưa Bộ「${rad.name || rad.character}」lên khung ghép!`, 'success');
+        }
+      };
     }
 
-    // Filter by search query
-    if (paletteQuery) {
-      baseData = baseData.filter(r =>
-        r[0].includes(paletteQuery) ||
-        (r[1] && r[1].toLowerCase().includes(paletteQuery)) ||
-        (r[2] && r[2].toLowerCase().includes(paletteQuery)) ||
-        (r[4] && r[4].toLowerCase().includes(paletteQuery))
-      );
+    if (this.modalLearnBtn) {
+      this.modalLearnBtn.onclick = () => {
+        if (window.appState) {
+          window.appState.markRadicalLearned(rad.character);
+        }
+        this.closeModal();
+        if (window.showToast) {
+          window.showToast(`Đã lưu bộ「${rad.character}」vào danh sách đã học!`, "success");
+        }
+      };
     }
 
-    if (countEl) countEl.textContent = baseData.length;
-    paletteEl.innerHTML = '';
-
-    if (baseData.length === 0) {
-      let emptyMsg = 'Không tìm thấy bộ thủ phù hợp.';
-      if (paletteTab === 'crafted') {
-        emptyMsg = 'Chưa có chữ nào được chế tác. Hãy kéo ghép các bộ thủ trên bàn trước!';
-      } else if (paletteTab === 'synergy') {
-        emptyMsg = 'Kéo ít nhất 1 bộ thủ lên bàn Tianzige để xem các bộ thủ hợp lệ có thể ghép cùng!';
-      }
-      paletteEl.innerHTML = `<div class="palette-empty">${emptyMsg}</div>`;
-      return;
-    }
-
-    baseData.forEach(r => {
-      const token = document.createElement('div');
-      token.className  = 'palette-token';
-      token.role       = 'listitem';
-      token.draggable  = true;
-      token.dataset.hanzi   = r[0];
-      token.dataset.sino    = r[1] || '';
-      token.dataset.pinyin  = r[2] || '';
-      token.dataset.strokes = r[3] || 0;
-      token.dataset.meaning = r[4] || '';
-
-      if (synergySet.has(r[0])) {
-        token.classList.add('synergy-match');
-        token.title = `✨ Có thể ghép với thẻ đang có trên bàn!`;
-      }
-
-      token.innerHTML = `
-        <span class="token-char">${r[0]}</span>
-        <span class="token-info">
-          <span class="token-sino">${r[1] || '—'}</span>
-          <span class="token-sub">${r[2] || ''} · ${r[4] || ''}</span>
-        </span>
-      `;
-      token.addEventListener('dragstart', e => {
-        e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('text/plain', JSON.stringify({
-          char: r[0], sino: r[1], pinyin: r[2], meaning: r[4]
-        }));
-        window.HanziForge = window.HanziForge || {};
-        window.HanziForge.dragData = { char: r[0], sino: r[1], pinyin: r[2], meaning: r[4] };
-      });
-      token.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        onRadicalCardClick(r);
-      });
-      paletteEl.appendChild(token);
-    });
+    if (this.modal) this.modal.classList.add('active');
   }
 
-  // ── Radical Card Click → Open Character Detail Modal (HanziWriter) ────────
-  function onRadicalCardClick(r) {
-    if (window.HanziForge?.openCharDetail) {
-      window.HanziForge.openCharDetail(r[0], {
-        sino: r[1],
-        pinyin: r[2],
-        strokes: r[3],
-        meaning: r[4]
-      });
+  closeModal() {
+    if (window._hwRadInstance) {
+      try { window._hwRadInstance.cancelQuiz(); } catch(e) {}
+      window._hwRadInstance = null;
     }
+    if (this.modal) this.modal.classList.remove('active');
   }
+}
 
-  // ── Filter & Search bindings ──────────────────────────────────────────────
+window.RadicalExplorer = RadicalExplorer;
 
-  // Search in radical browser (Tab 2)
-  document.getElementById('radical-search')?.addEventListener('input', e => {
-    searchQuery = e.target.value.trim();
-    renderRadicalsGrid();
-  });
-
-  // Stroke filter buttons in radical browser (Tab 2)
-  document.querySelectorAll('#stroke-filter .filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#stroke-filter .filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filterStrokes = btn.dataset.strokes;
-      renderRadicalsGrid();
-    });
-  });
-
-  // Palette tabs (Tab 1)
-  document.querySelectorAll('#palette-filter-tabs .filter-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#palette-filter-tabs .filter-tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      paletteTab = btn.dataset.tab;
-      renderPaletteTokens();
-    });
-  });
-
-  // Palette search
-  document.getElementById('palette-search')?.addEventListener('input', e => {
-    paletteQuery = e.target.value.trim().toLowerCase();
-    renderPaletteTokens();
-  });
-
-  // Stroke chips in palette
-  document.querySelectorAll('#stroke-chips .chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#stroke-chips .chip').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      paletteStrokes = btn.dataset.strokes;
-      renderPaletteTokens();
-    });
-  });
-
-  // ── Init ──────────────────────────────────────────────────────────────────
-  window.HanziForge = window.HanziForge || {};
-  window.HanziForge.RADICALS_DATA = RADICALS_DATA;
-  window.HanziForge.CRAFTABLE_RADICAL_CHARS = CRAFTABLE_RADICAL_CHARS;
-  window.HanziForge.craftedTokens = window.HanziForge.craftedTokens || [];
-  window.HanziForge.synergyRadicals = window.HanziForge.synergyRadicals || new Set();
-  window.HanziForge.renderPaletteTokens = renderPaletteTokens;
-  window.HanziForge.openRadicalDetail = onRadicalCardClick;
-
-  renderPaletteTokens();
-  renderRadicalsGrid();
-
-  console.log(`[HanziForge] radicals.js loaded — ${RADICALS_DATA.length} radicals, demo filter active`);
-})();
