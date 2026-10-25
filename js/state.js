@@ -1,9 +1,10 @@
-// HanziForge - State Management Store
+// HanziForge — State Management Store (js/state.js)
+// LocalStorage persistence, accurate local-date streak calculation, XP/Level progression & JSON Backup
 
 const DEFAULT_STATE = {
   learnedRadicals: ["亻", "木", "氵"],
-  completedCharacters: [], // ["xiu1", "ming2", ...]
-  flashcardProgress: {},    // { "xiu1": "mastered", "ming2": "learning" }
+  completedCharacters: [], // ["char_休", "char_明", ...]
+  flashcardProgress: {},    // { "char_休": "mastered" }
   scriptMode: 'simplified', // 'simplified' (Giản thể) | 'traditional' (Phồn thể)
   quizStats: {
     totalPlayed: 0,
@@ -13,12 +14,20 @@ const DEFAULT_STATE = {
   },
   xp: 120,
   streakDays: 3,
-  lastActiveDate: new Date().toISOString().slice(0, 10)
+  lastActiveDate: null
 };
+
+function getLocalDateString(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 class StateStore {
   constructor() {
     this.key = 'hanziforge_storage_v1';
+    this.subscribers = [];
     this.state = this.loadState();
     this.checkStreak();
   }
@@ -42,12 +51,23 @@ class StateStore {
     try {
       const data = localStorage.getItem(this.key);
       if (data) {
-        return { ...DEFAULT_STATE, ...JSON.parse(data) };
+        const parsed = JSON.parse(data);
+        return {
+          ...DEFAULT_STATE,
+          ...parsed,
+          learnedRadicals: Array.isArray(parsed.learnedRadicals) ? [...parsed.learnedRadicals] : [...DEFAULT_STATE.learnedRadicals],
+          completedCharacters: Array.isArray(parsed.completedCharacters) ? [...parsed.completedCharacters] : []
+        };
       }
     } catch (e) {
       console.warn("Error loading localStorage state:", e);
     }
-    return { ...DEFAULT_STATE };
+    return {
+      ...DEFAULT_STATE,
+      learnedRadicals: [...DEFAULT_STATE.learnedRadicals],
+      completedCharacters: [],
+      lastActiveDate: getLocalDateString()
+    };
   }
 
   saveState() {
@@ -60,27 +80,55 @@ class StateStore {
   }
 
   checkStreak() {
-    const today = new Date().toISOString().slice(0, 10);
-    if (this.state.lastActiveDate !== today) {
-      this.state.lastActiveDate = today;
+    const todayStr = getLocalDateString();
+    const lastStr = this.state.lastActiveDate;
+
+    if (!lastStr) {
+      this.state.lastActiveDate = todayStr;
+      this.state.streakDays = Math.max(1, this.state.streakDays || 1);
+      this.saveState();
+      return;
+    }
+
+    if (lastStr !== todayStr) {
+      const todayDate = new Date(todayStr + 'T00:00:00');
+      const lastDate = new Date(lastStr + 'T00:00:00');
+      const diffDays = Math.round((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        // Consecutive day! Increment streak and award daily login bonus
+        this.state.streakDays = (this.state.streakDays || 1) + 1;
+        this.addXP(15);
+      } else if (diffDays > 1) {
+        // Missed one or more days — reset streak to 1
+        this.state.streakDays = 1;
+      }
+      this.state.lastActiveDate = todayStr;
       this.saveState();
     }
   }
 
   markCharacterCompleted(charId) {
-    if (!this.state.completedCharacters.includes(charId)) {
-      this.state.completedCharacters.push(charId);
+    if (!charId) return false;
+    const normalizedId = charId.startsWith('char_') ? charId : `char_${charId}`;
+    if (!this.state.completedCharacters.includes(normalizedId)) {
+      this.state.completedCharacters.push(normalizedId);
       this.addXP(25);
       this.saveState();
+      return true;
     }
+    return false;
   }
 
   markRadicalLearned(radicalChar) {
+    if (!radicalChar) return false;
     if (!this.state.learnedRadicals.includes(radicalChar)) {
       this.state.learnedRadicals.push(radicalChar);
       this.addXP(10);
       this.saveState();
+      return true;
     }
+    return false;
   }
 
   updateFlashcard(charId, status) {
@@ -107,7 +155,7 @@ class StateStore {
   }
 
   addXP(amount) {
-    this.state.xp = (this.state.xp || 0) + amount;
+    this.state.xp = Math.max(0, (this.state.xp || 0) + amount);
   }
 
   getUserLevel() {
@@ -119,7 +167,14 @@ class StateStore {
 
   isCompleted(charId) {
     if (!this.state || !this.state.completedCharacters) return false;
-    return this.state.completedCharacters.includes(charId);
+    const raw = charId.replace(/^char_/, '');
+    return this.state.completedCharacters.includes(`char_${raw}`) ||
+           this.state.completedCharacters.includes(raw);
+  }
+
+  getUnlockedCharactersList() {
+    if (!this.state || !Array.isArray(this.state.completedCharacters)) return [];
+    return this.state.completedCharacters.map(id => id.replace(/^char_/, '')).filter(Boolean);
   }
 
   // ── Offline Game Save / Export / Import ──────────────────────────────────
@@ -127,7 +182,7 @@ class StateStore {
     try {
       const payload = {
         app: "HanziForge",
-        version: "1.0",
+        version: "2.0",
         exportedAt: new Date().toISOString(),
         saveData: this.state
       };
@@ -136,13 +191,13 @@ class StateStore {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `hanziforge_save_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `hanziforge_save_${getLocalDateString()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       return { success: true };
-    } catch(err) {
+    } catch (err) {
       console.error("Export save failed:", err);
       return { success: false, error: err.message };
     }
@@ -159,20 +214,26 @@ class StateStore {
         ...DEFAULT_STATE,
         ...data,
         completedCharacters: Array.isArray(data.completedCharacters) ? data.completedCharacters : [],
-        learnedRadicals: Array.isArray(data.learnedRadicals) ? data.learnedRadicals : DEFAULT_STATE.learnedRadicals,
+        learnedRadicals: Array.isArray(data.learnedRadicals) ? data.learnedRadicals : [...DEFAULT_STATE.learnedRadicals],
         xp: typeof data.xp === 'number' ? data.xp : 0,
-        streakDays: typeof data.streakDays === 'number' ? data.streakDays : 1
+        streakDays: typeof data.streakDays === 'number' ? data.streakDays : 1,
+        lastActiveDate: getLocalDateString()
       };
       this.saveState();
       return { success: true, count: this.state.completedCharacters.length };
-    } catch(err) {
+    } catch (err) {
       console.error("Import save failed:", err);
       return { success: false, error: err.message };
     }
   }
 
   resetProgress() {
-    this.state = { ...DEFAULT_STATE };
+    this.state = {
+      ...DEFAULT_STATE,
+      learnedRadicals: [...DEFAULT_STATE.learnedRadicals],
+      completedCharacters: [],
+      lastActiveDate: getLocalDateString()
+    };
     this.saveState();
   }
 
@@ -183,10 +244,11 @@ class StateStore {
 
   notifySubscribers() {
     if (this.subscribers) {
-      this.subscribers.forEach(cb => cb(this.state));
+      this.subscribers.forEach(cb => {
+        try { cb(this.state); } catch (e) { console.warn(e); }
+      });
     }
   }
 }
 
 window.appState = new StateStore();
-

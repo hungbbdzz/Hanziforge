@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HanziForge — Interactive Chinese Character Learning Platform</title>
-  <meta name="description" content="Nền tảng học tiếng Trung tương tác thông minh qua cấu tạo bộ thủ và Hanzi Builder.">
+  <meta name="description" content="Nền tảng học tiếng Trung tương tác thông minh qua cấu tạo bộ thủ và Hanzi Builder 2D.">
+  <meta name="theme-color" content="#090d16">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Noto+Serif+SC:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=ZCOOL+XiaoWei&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,14 +25,14 @@
 
       <!-- Navigation Tabs (Streamlined UX) -->
       <nav class="nav-tabs" role="tablist">
-        <button class="nav-tab-btn active" data-tab="builder" role="tab" id="tab-builder">
+        <button class="nav-tab-btn active" data-tab="builder" role="tab" id="tab-builder" aria-selected="true">
           <span>⚒️ Không Gian Ghép Chữ</span>
           <span class="badge-pill">Core</span>
         </button>
-        <button class="nav-tab-btn" data-tab="radicals" role="tab" id="tab-radicals">
+        <button class="nav-tab-btn" data-tab="radicals" role="tab" id="tab-radicals" aria-selected="false">
           <span>📖 214 Bộ Thủ Khang Hy</span>
         </button>
-        <button class="nav-tab-btn" data-tab="progress" role="tab" id="tab-progress">
+        <button class="nav-tab-btn" data-tab="progress" role="tab" id="tab-progress" aria-selected="false">
           <span>📊 Tiến độ & Thành tích</span>
         </button>
       </nav>
@@ -79,16 +82,17 @@
           <div class="palette-card-header">
             <div class="header-title">
               <span>📦 Kho Thành Phần</span>
-              <span class="count-badge" id="palette-count-badge">20 bộ</span>
+              <span class="count-badge" id="palette-count-badge">256 bộ</span>
             </div>
             <button class="btn btn-secondary btn-sm codex-open-btn" id="btn-open-codex" title="Mở Sách Công Thức & Cây Khám Phá">
               📖 Sách công thức
             </button>
           </div>
 
-          <!-- Stroke Count Filter Tabs -->
+          <!-- Stroke Count & Curated Filter Tabs -->
           <div class="palette-filter-tabs" id="palette-filter-tabs">
             <button class="filter-tab-btn active" data-filter="all">Tất cả</button>
+            <button class="filter-tab-btn" data-filter="demo" title="20 bộ thủ nền tảng dễ ghép nhất cho người mới">🔥 Cơ bản (20)</button>
             <button class="filter-tab-btn tab-synergy" data-filter="synergy" id="tab-synergy-filter" title="Chỉ hiện các bộ thủ có thể ghép với các thẻ đang có trên bàn">✨ Ghép được</button>
             <button class="filter-tab-btn" data-filter="1-2">1–2 nét</button>
             <button class="filter-tab-btn" data-filter="3-4">3–4 nét</button>
@@ -146,7 +150,7 @@
                 <div class="canvas-empty-prompt" id="canvas-empty-prompt">
                   <div class="prompt-icon">⚒️</div>
                   <p>Kéo các bộ thủ vào đây</p>
-                  <small>(Kéo ra ngoài khung để xóa)</small>
+                  <small>(Kéo ra ngoài khung để xóa • Chuột phải để nhân bản)</small>
                 </div>
               </div>
 
@@ -157,7 +161,7 @@
               </div>
 
               <!-- 3. Minecraft Result Output Slot -->
-              <div class="crafting-output-slot" id="crafting-output-slot" title="Bấm để thu hoạch chữ hoặc kéo vào kho để ghép tiếp!">
+              <div class="crafting-output-slot" id="crafting-output-slot" title="Bấm để hợp nhất chữ lên bàn hoặc Chuột phải để ghép tiếp!">
                 <div class="output-slot-inner" id="output-slot-inner">
                   <div class="output-placeholder-icon">✨</div>
                   <span class="output-placeholder-text">Kết quả</span>
@@ -168,7 +172,7 @@
                   <div class="crafted-glyph" id="crafted-glyph">休</div>
                   <div class="crafted-pinyin" id="crafted-pinyin">xiū</div>
                   <div class="crafted-claim-btn" id="btn-claim-crafted">
-                    ➕ Thu hoạch vào Kho
+                    ➕ Hợp nhất trên bàn
                   </div>
                 </div>
               </div>
@@ -177,6 +181,9 @@
 
             <!-- Canvas Quick Actions Below Board -->
             <div class="canvas-toolbar">
+              <button class="btn btn-secondary btn-sm" id="btn-undo-canvas" title="Hoàn tác bước vừa rồi (Ctrl+Z)" disabled style="opacity:0.45;">
+                ↩️ Hoàn tác
+              </button>
               <button class="btn btn-secondary btn-sm" id="btn-clear-canvas" title="Xóa toàn bộ khung">
                 🗑 Xóa khung
               </button>
@@ -224,6 +231,7 @@
               </p>
             </div>
           </div>
+        </div>
       </div>
     </section>
 
@@ -235,7 +243,7 @@
       <div class="section-headline">
         <div class="section-title-wrap">
           <h2><span class="hanzi-decor">部首</span> Khám Phá Bộ Thủ (Radical Explorer)</h2>
-          <p>Tìm hiểu các bộ thủ cốt lõi của chữ Hán, số nét, ý nghĩa tượng hình và các chữ ví dụ.</p>
+          <p>Tìm hiểu các bộ thủ cốt lõi của chữ Hán, phân loại ngữ nghĩa, thứ tự nét viết và các chữ ví dụ.</p>
         </div>
       </div>
 
@@ -273,7 +281,7 @@
         <div class="stat-metric-card gold">
           <div class="stat-icon-wrap">⚒️</div>
           <div>
-            <div class="stat-number" id="dash-chars-count">0 / 9574</div>
+            <div class="stat-number" id="dash-chars-count">0 / 9,574</div>
             <div class="stat-label">Chữ đã ghép trong Builder</div>
           </div>
         </div>
@@ -289,7 +297,7 @@
         <div class="stat-metric-card gold">
           <div class="stat-icon-wrap">🔥</div>
           <div>
-            <div class="stat-number" id="dash-streak-count">1 ngày</div>
+            <div class="stat-number" id="dash-streak-count">3 ngày</div>
             <div class="stat-label">Chuỗi ngày học liên tục</div>
           </div>
         </div>
@@ -297,7 +305,7 @@
         <div class="stat-metric-card gold">
           <div class="stat-icon-wrap">⭐</div>
           <div>
-            <div class="stat-number" id="dash-total-xp">120</div>
+            <div class="stat-number" id="dash-total-xp">120 XP</div>
             <div class="stat-label">Tổng điểm kinh nghiệm (XP)</div>
           </div>
         </div>
@@ -341,6 +349,7 @@
   <!-- Radical Detail Modal -->
   <div class="modal-backdrop" id="radical-detail-modal">
     <div class="modal-content" style="max-width: 520px; border-radius: var(--radius-lg); padding: 1.75rem; background: #0f172a; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.85);">
+      <button class="modal-close-btn" id="btn-close-rad-modal" aria-label="Đóng chi tiết bộ thủ">&times;</button>
       <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem;">
         <div style="font-family: var(--font-hanzi); font-size: 4.2rem; color: var(--gold-light); line-height: 1; min-width: 70px; text-align: center;" id="modal-rad-char">口</div>
         <div>
@@ -379,7 +388,7 @@
       </div>
 
       <div style="margin-bottom: 1.25rem;">
-        <h4 style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.04em;">Các chữ Hán tiêu biểu chứa bộ này (Bấm để nghe):</h4>
+        <h4 style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.04em;">Các chữ Hán tiêu biểu chứa bộ này (Bấm để tra cứu):</h4>
         <div id="modal-rad-examples" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; max-height: 180px; overflow-y: auto;">
         </div>
       </div>
@@ -398,10 +407,11 @@
   <!-- Hanzi & Vocab Inspector Modal (Từ Điển Chi Tiết & Từ Ghép) -->
   <div class="modal-backdrop" id="hanzi-vocab-modal">
     <div class="modal-content" style="max-width: 540px; border-radius: var(--radius-lg); padding: 1.75rem; background: #0f172a; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.85);">
+      <button class="modal-close-btn" id="btn-close-vocab-modal" aria-label="Đóng từ điển chi tiết">&times;</button>
       <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem;">
         <div style="font-family: var(--font-hanzi); font-size: 4.5rem; color: var(--gold-light); line-height: 1; min-width: 75px; text-align: center; cursor: pointer;" id="vocab-modal-char" title="Bấm để nghe phát âm">休</div>
         <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
             <h3 style="font-size: 1.4rem; color: #fff;" id="vocab-modal-name">Hán Việt: HƯU</h3>
             <span class="hsk-badge" id="vocab-modal-hsk" style="font-size: 0.75rem; padding: 0.15rem 0.5rem; background: rgba(16,185,129,0.15); color: var(--jade-primary); border: 1px solid var(--jade-glow); border-radius: 4px;">HSK 1</span>
           </div>
@@ -478,7 +488,7 @@
         </div>
         <div class="codex-stats-pills">
           <div class="codex-stat-pill">
-            <span class="csp-num" id="codex-stat-total">8.662</span>
+            <span class="csp-num" id="codex-stat-total">8.669</span>
             <span class="csp-lbl">Tổng công thức</span>
           </div>
           <div class="codex-stat-pill unlocked">
@@ -496,7 +506,7 @@
       <div class="codex-filter-bar">
         <div class="search-input-wrap codex-search-wrap">
           <span class="search-icon">🔍</span>
-          <input type="text" id="codex-search-input" placeholder="Lọc theo chữ Hán, bộ thủ, nghĩa hoặc pinyin...">
+          <input type="text" id="codex-search-input" placeholder="Lọc theo chữ Hán, bộ thủ, âm Hán Việt, nghĩa hoặc pinyin...">
         </div>
         <div class="codex-quick-tabs">
           <button class="codex-tab-btn active" data-tab="all">Tất cả</button>
@@ -516,7 +526,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- HanziWriter — Stroke Order Animations -->
-  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js" async></script>
   <!-- Script Modules -->
   <script src="data/hanzi_data_runtime.js"></script>
   <script src="data/chinese_variants.js"></script>
@@ -530,4 +540,3 @@
   <script src="js/app.js"></script>
 </body>
 </html>
-

@@ -112,22 +112,22 @@ hanziforge/
 
 ### Week 11 — 20/10/2026 | Ch.9: Technical Documentation
 **Planned commit:** `feat: bilingual sentence corpus + audio pronunciation`
-- [ ] Integrate `sentences_db.js` — 253,427 parallel CN-VI sentences
-- [ ] `js/audio.js` — Web Speech API pronunciation
-- [ ] Finalize `HANZIFORGE_SYSTEM_DOCS.md`
+- [x] Integrate `sentences_db.js` — 253,427 parallel CN-VI sentences
+- [x] `js/audio.js` — Web Speech API pronunciation
+- [x] Finalize `HANZIFORGE_SYSTEM_DOCS.md`
 
 ### Week 12 — 27/10/2026 | Polish
 **Planned commit:** `feat: PWA + performance optimization`
-- [ ] Service Worker for offline capability
-- [ ] `js/fps_meter.js` — real-time FPS monitoring HUD
-- [ ] CSS containment optimization
-- [ ] PWA manifest + installable on desktop
+- [x] Service Worker for offline capability
+- [x] `js/fps_meter.js` — real-time FPS monitoring HUD
+- [x] CSS containment optimization
+- [x] PWA manifest + installable on desktop
 
 ### Week 13 — 03/11/2026 | Final Prep
 **Planned commit:** `chore: final polish, README update, presentation prep`
-- [ ] Update README with all features
-- [ ] Final UI polish and bug fixes
-- [ ] Demo recording / screenshots
+- [x] Update README with all features
+- [x] Final UI polish and bug fixes
+- [x] Demo recording / screenshots
 
 ---
 

@@ -1,4 +1,4 @@
-// HanziForge — Minecraft-Style Free 2D Crafting Canvas & Recursive Compound Engine
+// HanziForge — Minecraft-Style Free 2D Crafting Canvas & Recursive Compound Engine (js/builder.js)
 //
 // Supported Spatial Layouts (covering all Unicode IDS operators in dictionary.txt):
 //  Binary (2 tokens):
@@ -17,16 +17,6 @@
 //    ⿳ THREE_PART_V        — 鼻, 曼  (top + mid + bottom)
 //    品字 TRIANGLE_PYRAMID   — 众, 森, 品, 晶, 焱, 磊, 淼, 犇, 垚
 
-// ── Known Radical Sets for Spatial Layout Detection ──────────────────────────────
-const SURROUND_BOTTOMLEFT_RADS = new Set(['辶','走','廴','之','辵','夂','夊','尢','乙','爪','瓜','支','弋','乚','更','尧','虎','犬']);
-const SURROUND_TOPRIGHT_RADS   = new Set(['刀','勹','气','几','司','弋','戈','户','羽','鸟','烏','令','丩','哉','刁']);
-const SURROUND_BOTTOM_RADS     = new Set(['凵','舁']);
-const SURROUND_LEFT_RADS       = new Set(['匚','匸']);
-const SURROUND_FULL_RADS       = new Set(['囗','口','行','衣']);
-const SURROUND_TOP_RADS        = new Set(['门','冂','几','凡','門','鬥','齐','齊','尺','戊','乃','大']);
-const SURROUND_TOPLEFT_RADS    = new Set(['疒','广','尸','户','戶','厂','虍','麻','鹿','辰','耂','尹','才','原','丰','羊']);
-
-// Diacritic-insensitive string normalization for 4-in-1 smart search
 function normalizeSearchText(str) {
   if (!str) return '';
   return str.toLowerCase()
@@ -37,22 +27,65 @@ function normalizeSearchText(str) {
     .trim();
 }
 
+function getAllographVariants(rad) {
+  if (window.getEquivalentRadicals) {
+    return window.getEquivalentRadicals(rad);
+  }
+  if (window.ALLOGRAPH_MAP && window.ALLOGRAPH_MAP[rad]) {
+    return window.ALLOGRAPH_MAP[rad];
+  }
+  return [rad];
+}
+
 class SpatialGeometry {
+  static findRecipeWithAllographs(layout, parts) {
+    const recipesMap = window.CRAFTING_RECIPES_MAP || {};
+    const directKey = `${layout}:${parts.join('+')}`;
+    if (recipesMap[directKey]) {
+      return { match: recipesMap[directKey], key: directKey, usedParts: parts };
+    }
+
+    if (parts.length === 2) {
+      const eq1 = getAllographVariants(parts[0]);
+      const eq2 = getAllographVariants(parts[1]);
+      for (const a of eq1) {
+        for (const b of eq2) {
+          const k = `${layout}:${a}+${b}`;
+          if (recipesMap[k]) {
+            return { match: recipesMap[k], key: k, usedParts: [a, b] };
+          }
+        }
+      }
+    } else if (parts.length === 3) {
+      const eq1 = getAllographVariants(parts[0]);
+      const eq2 = getAllographVariants(parts[1]);
+      const eq3 = getAllographVariants(parts[2]);
+      for (const a of eq1) {
+        for (const b of eq2) {
+          for (const c of eq3) {
+            const k = `${layout}:${a}+${b}+${c}`;
+            if (recipesMap[k]) {
+              return { match: recipesMap[k], key: k, usedParts: [a, b, c] };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   static analyze(tokens) {
     if (!tokens || tokens.length < 2) {
       return { layout: null, confidence: 0, formula: '', roles: [] };
     }
-
-    const recipesMap = window.CRAFTING_RECIPES_MAP || {};
 
     // ── 2-Component Analysis ──────────────────────────────────────────────────
     if (tokens.length === 2) {
       const [t1, t2] = tokens;
       const dx = t2.x - t1.x; // positive if t2 is to the right of t1
       const dy = t2.y - t1.y; // positive if t2 is below t1
-      const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Step 1: Find all candidate recipes for {t1, t2}
+      // Step 1: Find all candidate recipes for {t1, t2} (including allograph variants)
       const candidates = [];
       const layouts = [
         'LEFT_RIGHT', 'TOP_BOTTOM', 'SURROUND', 'SURROUND_TOP',
@@ -61,110 +94,111 @@ class SpatialGeometry {
       ];
 
       for (const layout of layouts) {
-        const k1 = `${layout}:${t1.radical}+${t2.radical}`;
-        const k2 = `${layout}:${t2.radical}+${t1.radical}`;
-        if (recipesMap[k1]) candidates.push({ match: recipesMap[k1], layout, first: t1, second: t2, key: k1 });
-        if (recipesMap[k2]) candidates.push({ match: recipesMap[k2], layout, first: t2, second: t1, key: k2 });
+        const r1 = SpatialGeometry.findRecipeWithAllographs(layout, [t1.radical, t2.radical]);
+        if (r1) {
+          candidates.push({ match: r1.match, layout, first: t1, second: t2, key: r1.key, usedParts: r1.usedParts });
+        }
+        const r2 = SpatialGeometry.findRecipeWithAllographs(layout, [t2.radical, t1.radical]);
+        if (r2) {
+          candidates.push({ match: r2.match, layout, first: t2, second: t1, key: r2.key, usedParts: r2.usedParts });
+        }
       }
+
+      const formatPartLabel = (rawRad, usedRad) => {
+        return usedRad && usedRad !== rawRad ? `${rawRad} (→${usedRad})` : rawRad;
+      };
 
       // Step 2: Evaluate candidate recipes based on strict structure type
       for (const cand of candidates) {
-        const { layout, first, second, match } = cand;
-        const cDx = second.x - first.x; // > 0 if second is to the right of first
-        const cDy = second.y - first.y; // > 0 if second is below first
+        const { layout, first, second, match, usedParts } = cand;
+        const cDx = second.x - first.x;
+        const cDy = second.y - first.y;
         const cDist = Math.sqrt(cDx * cDx + cDy * cDy);
+        const fLbl = formatPartLabel(first.radical, usedParts ? usedParts[0] : first.radical);
+        const sLbl = formatPartLabel(second.radical, usedParts ? usedParts[1] : second.radical);
 
         // ── PHÂN NHÓM 1: Ghép thường (Trái — Phải, Trên — Dưới) ──
         if (layout === 'LEFT_RIGHT') {
-          // Bắt buộc first nằm bên trái second theo phương ngang
           if (first.x < second.x - 4 && Math.abs(cDx) >= Math.abs(cDy) * 0.4) {
             return {
               layout: 'LEFT_RIGHT',
               matchedCandidate: match,
               roles: [{ token: first, position: 'LEFT' }, { token: second, position: 'RIGHT' }],
-              formula: `${first.radical} [Trái] ❖ ${second.radical} [Phải]`,
+              formula: `${fLbl} [Trái] ❖ ${sLbl} [Phải]`,
               layoutName: 'Trái — Phải (⿰)'
             };
           }
         } else if (layout === 'TOP_BOTTOM') {
-          // Bắt buộc first nằm ở TRÊN second theo phương dọc
           if (first.y < second.y - 4 && Math.abs(cDy) >= Math.abs(cDx) * 0.4) {
             return {
               layout: 'TOP_BOTTOM',
               matchedCandidate: match,
               roles: [{ token: first, position: 'TOP' }, { token: second, position: 'BOTTOM' }],
-              formula: `${first.radical} [Trên] ❖ ${second.radical} [Dưới]`,
+              formula: `${fLbl} [Trên] ❖ ${sLbl} [Dưới]`,
               layoutName: 'Trên — Dưới (⿱)'
             };
           }
         }
 
         // ── PHÂN NHÓM 2: Bao che 1 phần, Bao vây & Chồng lớp ──
-        // Bắt buộc phải CHẠM/LỒNG NHAU (cDist <= 42%) VÀ ĐÚNG HƯỚNG GÓC BAO BỌC
         else if (cDist <= 42) {
           if (layout === 'SURROUND_BOTTOMLEFT') {
-            // first là bộ bao ngoài góc dưới-trái (e.g. 辶, 廴, 走)
             if (first.x <= second.x + 8 && first.y >= second.y - 8) {
               return {
                 layout: 'SURROUND_BOTTOMLEFT',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'BOTTOMLEFT' }, { token: second, position: 'INSIDE_TOPRIGHT' }],
-                formula: `${first.radical} [Bao dưới-trái] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Bao dưới-trái] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Nửa bao góc dưới-trái (⿺)'
               };
             }
           } else if (layout === 'SURROUND_TOPLEFT') {
-            // first là bộ bao ngoài góc trên-trái (e.g. 广, 疒, 尸, 户)
             if (first.x <= second.x + 8 && first.y <= second.y + 8) {
               return {
                 layout: 'SURROUND_TOPLEFT',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'TOPLEFT' }, { token: second, position: 'INSIDE_BOTTOMRIGHT' }],
-                formula: `${first.radical} [Góc trên-trái] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Góc trên-trái] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Nửa bao góc trên-trái (⿸)'
               };
             }
           } else if (layout === 'SURROUND_TOPRIGHT') {
-            // first là bộ bao ngoài góc trên-phải (e.g. 刀, 勹, 气)
             if (first.x >= second.x - 8 && first.y <= second.y + 8) {
               return {
                 layout: 'SURROUND_TOPRIGHT',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'TOPRIGHT' }, { token: second, position: 'INSIDE_BOTTOMLEFT' }],
-                formula: `${first.radical} [Bao trên-phải] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Bao trên-phải] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Nửa bao góc trên-phải (⿹)'
               };
             }
           } else if (layout === 'SURROUND_TOP') {
-            // first là bộ bao trên (e.g. 门, 冂), bắt buộc first nằm TRÊN second và thẳng hàng ngang
             if (first.y <= second.y - 4 && Math.abs(cDx) <= 22) {
               return {
                 layout: 'SURROUND_TOP',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'OUTSIDE' }, { token: second, position: 'INSIDE' }],
-                formula: `${first.radical} [Bao trên] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Bao trên] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Bao bọc trên & 2 bên (⿵)'
               };
             }
           } else if (layout === 'SURROUND_BOTTOM') {
-            // first là bộ bao dưới (e.g. 凵), bắt buộc first nằm DƯỚI second và thẳng hàng ngang
             if (first.y >= second.y + 4 && Math.abs(cDx) <= 22) {
               return {
                 layout: 'SURROUND_BOTTOM',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'BOTTOM' }, { token: second, position: 'INSIDE_TOP' }],
-                formula: `${first.radical} [Bao dưới] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Bao dưới] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Bao bọc dưới hở trên (⿶)'
               };
             }
           } else if (layout === 'SURROUND_LEFT') {
-            // first là bộ bao trái (e.g. 匚), bắt buộc first nằm BÊN TRÁI second và thẳng hàng dọc
             if (first.x <= second.x - 4 && Math.abs(cDy) <= 22) {
               return {
                 layout: 'SURROUND_LEFT',
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'LEFT_FRAME' }, { token: second, position: 'INSIDE_RIGHT' }],
-                formula: `${first.radical} [Bao trái] ❖ ${second.radical} [Bên trong]`,
+                formula: `${fLbl} [Bao trái] ❖ ${sLbl} [Bên trong]`,
                 layoutName: 'Bao bọc bên trái hở phải (⿷)'
               };
             }
@@ -174,7 +208,7 @@ class SpatialGeometry {
                 layout: layout,
                 matchedCandidate: match,
                 roles: [{ token: first, position: 'OUTSIDE' }, { token: second, position: 'INSIDE' }],
-                formula: `${first.radical} ❖ ${second.radical}`,
+                formula: `${fLbl} ❖ ${sLbl}`,
                 layoutName: layout === 'SURROUND' ? 'Bao bọc toàn phần (⿴)' : 'Giao nhau / Chồng lớp (⿻)'
               };
             }
@@ -182,7 +216,6 @@ class SpatialGeometry {
         }
       }
 
-      // Check if any candidate was an OVERLAID candidate that just needs closer distance
       const overlaidCand = candidates.find(c => c.layout === 'OVERLAID');
       const hintOverlaid = overlaidCand ? overlaidCand.match : null;
 
@@ -229,11 +262,11 @@ class SpatialGeometry {
       const br = bottom1.x < bottom2.x ? bottom2 : bottom1;
 
       // 1. Check Triangle Pyramid Recipe (品, 众, 森, 晶, 焱, 磊, 淼, 犇, 垚...)
-      const triKey = `TRIANGLE_PYRAMID:${topToken.radical}+${bl.radical}+${br.radical}`;
-      if (recipesMap[triKey]) {
+      const triRes = SpatialGeometry.findRecipeWithAllographs('TRIANGLE_PYRAMID', [topToken.radical, bl.radical, br.radical]);
+      if (triRes) {
         return {
           layout: 'TRIANGLE_PYRAMID',
-          matchedCandidate: recipesMap[triKey],
+          matchedCandidate: triRes.match,
           roles: [
             { token: topToken, position: 'TOP' },
             { token: bl, position: 'BOTTOM_LEFT' },
@@ -246,11 +279,11 @@ class SpatialGeometry {
 
       // 2. Check Three-Part Horizontal Recipe (⿲ 湖, 树, 做...)
       const sortedX = [...tokens].sort((a, b) => a.x - b.x);
-      const h3Key = `THREE_PART_H:${sortedX[0].radical}+${sortedX[1].radical}+${sortedX[2].radical}`;
-      if (recipesMap[h3Key]) {
+      const h3Res = SpatialGeometry.findRecipeWithAllographs('THREE_PART_H', [sortedX[0].radical, sortedX[1].radical, sortedX[2].radical]);
+      if (h3Res) {
         return {
           layout: 'THREE_PART_H',
-          matchedCandidate: recipesMap[h3Key],
+          matchedCandidate: h3Res.match,
           roles: [
             { token: sortedX[0], position: 'LEFT' },
             { token: sortedX[1], position: 'MIDDLE' },
@@ -262,11 +295,11 @@ class SpatialGeometry {
       }
 
       // 3. Check Three-Part Vertical Recipe (⿳ 鼻, 曼...)
-      const v3Key = `THREE_PART_V:${sortedByY[0].radical}+${sortedByY[1].radical}+${sortedByY[2].radical}`;
-      if (recipesMap[v3Key]) {
+      const v3Res = SpatialGeometry.findRecipeWithAllographs('THREE_PART_V', [sortedByY[0].radical, sortedByY[1].radical, sortedByY[2].radical]);
+      if (v3Res) {
         return {
           layout: 'THREE_PART_V',
-          matchedCandidate: recipesMap[v3Key],
+          matchedCandidate: v3Res.match,
           roles: [
             { token: sortedByY[0], position: 'TOP' },
             { token: sortedByY[1], position: 'MIDDLE' },
@@ -318,6 +351,7 @@ class HanziBuilder {
 
     // State for placed tokens on canvas: [{ id, radical, name, pinyin, x, y, el }]
     this.canvasTokens = [];
+    this.undoStack = [];
     this.tokenIdCounter = 0;
     this.currentCraftedChar = null;
     this.lastNotifiedCraftId = null;
@@ -325,16 +359,67 @@ class HanziBuilder {
     this.draggedCanvasToken = null;
 
     // Stroke & Category Filter State
-    this.currentStrokeFilter = 'all'; // 'all', '1-2', '3-4', '5-6', '7+', 'crafted'
+    this.currentStrokeFilter = 'all'; // 'all', 'demo', 'synergy', '1-2', '3-4', '5-6', '7+', 'crafted'
 
     // Recipe Codex State
     this.codexActiveTab = 'all'; // 'all', 'unlocked', 'locked'
     this.codexSearchQuery = '';
 
     this.initDOM();
+    this.restoreCraftedFromState();
     this.bindEvents();
     this.initCodex();
     this.renderPalette();
+  }
+
+  // ── Restore Unlocked Characters into Inventory & Session Feed ───────────────
+  restoreCraftedFromState() {
+    this.radicalsData = [...(window.RADICALS_DATA || [])];
+    this.sessionDiscoveries = [];
+
+    if (!window.appState || !window.appState.getUnlockedCharactersList) return;
+    const unlockedChars = window.appState.getUnlockedCharactersList();
+    const db = window.CHARACTERS_DB || {};
+    const recipesMap = window.CRAFTING_RECIPES_MAP || {};
+
+    unlockedChars.forEach(ch => {
+      const charInfo = db[ch] || {};
+      const rec = Object.values(recipesMap).find(r => r.character === ch) || {};
+      const sv = charInfo.sino_vietnamese || rec.sino_vietnamese || ch;
+      const py = window.convertNumberedPinyinToAccents
+        ? window.convertNumberedPinyinToAccents(charInfo.pinyin || rec.pinyin || '')
+        : (charInfo.pinyin || rec.pinyin || '');
+      const mn = charInfo.meaning || rec.meaning || '';
+
+      if (!this.radicalsData.some(r => r.character === ch)) {
+        this.radicalsData.unshift({
+          character: ch,
+          name: sv,
+          pinyin: py,
+          meaning: mn,
+          category: 'Chữ đã chế tác',
+          stroke_count: charInfo.stroke_count || 6,
+          is_crafted: true
+        });
+      }
+
+      if (!this.sessionDiscoveries.some(d => d.character === ch)) {
+        this.sessionDiscoveries.push({
+          id: `char_${ch}`,
+          character: ch,
+          sino_vietnamese: sv,
+          pinyin: py,
+          meaning: mn,
+          components: (rec.parts || []).map(p => ({ radical: p }))
+        });
+      }
+    });
+
+    if (this.discoveryCount) {
+      this.discoveryCount.textContent = `${this.sessionDiscoveries.length} chữ`;
+    }
+    this.renderHistoryFeed();
+    this.renderPalette(this.paletteSearch ? this.paletteSearch.value.trim() : '');
   }
 
   // ── DOM References ──────────────────────────────────────────────────────────
@@ -361,6 +446,7 @@ class HanziBuilder {
     this.suggestionAlert    = document.getElementById('spatial-suggestion-alert');
     this.alertMsg           = document.getElementById('spatial-alert-msg');
     this.flipBtn            = document.getElementById('btn-flip-components');
+    this.undoBtn            = document.getElementById('btn-undo-canvas');
     this.clearBtn           = document.getElementById('btn-clear-canvas');
     this.fuseBtn            = document.getElementById('btn-fuse-canvas');
     this.historyFeed        = document.getElementById('forge-history-feed');
@@ -377,30 +463,80 @@ class HanziBuilder {
     this.codexStatPercent   = document.getElementById('codex-stat-percent');
   }
 
+  // ── Undo History Management ─────────────────────────────────────────────────
+  pushUndoSnapshot() {
+    const snap = this.canvasTokens.map(t => ({
+      radical: t.radical,
+      name: t.name,
+      pinyin: t.pinyin,
+      x: t.x,
+      y: t.y
+    }));
+    this.undoStack.push(snap);
+    if (this.undoStack.length > 25) {
+      this.undoStack.shift();
+    }
+    this.updateUndoButtonState();
+  }
+
+  updateUndoButtonState() {
+    if (this.undoBtn) {
+      this.undoBtn.disabled = this.undoStack.length === 0;
+      this.undoBtn.style.opacity = this.undoStack.length === 0 ? '0.45' : '1';
+    }
+  }
+
+  undoLastAction() {
+    if (this.undoStack.length === 0) {
+      window.showToast && window.showToast('Không có thao tác nào trước đó để hoàn tác', 'info');
+      return;
+    }
+    window.soundEngine?.playTap();
+    const prev = this.undoStack.pop();
+    this.updateUndoButtonState();
+
+    this.canvasTokens.forEach(t => { if (t.el) t.el.remove(); });
+    this.canvasTokens = [];
+
+    prev.forEach(item => {
+      const tokenId = `token_${++this.tokenIdCounter}`;
+      const tokenObj = {
+        id: tokenId,
+        radical: item.radical,
+        name: item.name,
+        pinyin: item.pinyin,
+        x: item.x,
+        y: item.y
+      };
+      this.canvasTokens.push(tokenObj);
+      this.renderTokenElement(tokenObj);
+    });
+
+    this.onCanvasStateChanged();
+    window.showToast && window.showToast('↩️ Đã hoàn tác bước vừa rồi', 'info');
+  }
+
   // ── Event Bindings ──────────────────────────────────────────────────────────
 
   bindEvents() {
-    // 4-in-1 Smart Search (Hanzi, Pinyin, Sino-Vietnamese, Meaning)
     if (this.paletteSearch) {
       this.paletteSearch.addEventListener('input', () => {
         this.renderPalette(this.paletteSearch.value.trim());
       });
     }
 
-    // Stroke Count Filter Tabs
     if (this.filterTabsWrap) {
       this.filterTabsWrap.querySelectorAll('.filter-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           this.filterTabsWrap.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.currentStrokeFilter = btn.dataset.filter || 'all';
-          window.soundEngine.playTap();
+          window.soundEngine?.playTap();
           this.renderPalette(this.paletteSearch ? this.paletteSearch.value.trim() : '');
         });
       });
     }
 
-    // Canvas Board Drag & Drop
     if (this.canvasBoard) {
       this.canvasBoard.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -421,7 +557,6 @@ class HanziBuilder {
       });
     }
 
-    // Global dragover & drop to detect dragging outside the canvas to discard
     document.addEventListener('dragover', (e) => {
       if (this.draggedCanvasToken) {
         e.preventDefault();
@@ -440,23 +575,35 @@ class HanziBuilder {
           const removedId = this.draggedCanvasToken.id;
           const removedRad = this.draggedCanvasToken.radical;
           this.removeToken(removedId);
-          window.showToast(`Đã loại bỏ bộ [ ${removedRad} ] ra khỏi khung`, 'info');
+          window.showToast && window.showToast(`Đã loại bỏ bộ [ ${removedRad} ] ra khỏi khung`, 'info');
         }
         this.draggedCanvasToken = null;
       }
     });
 
-    // Clear Button
-    if (this.clearBtn) {
-      this.clearBtn.addEventListener('click', () => this.clearCanvas());
+    if (this.undoBtn) {
+      this.undoBtn.addEventListener('click', () => this.undoLastAction());
     }
 
-    // Flip Components Button
+    // Keyboard shortcut Ctrl+Z for Undo when on Builder tab
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        const builderSec = document.getElementById('section-builder');
+        if (builderSec && builderSec.classList.contains('active')) {
+          e.preventDefault();
+          this.undoLastAction();
+        }
+      }
+    });
+
+    if (this.clearBtn) {
+      this.clearBtn.addEventListener('click', () => this.clearCanvas(true));
+    }
+
     if (this.flipBtn) {
       this.flipBtn.addEventListener('click', () => this.flipCanvasPositions());
     }
 
-    // Crafting Arrow: Click = Fuse tokens into the new character on canvas!
     if (this.craftArrowWrap) {
       this.craftArrowWrap.addEventListener('click', () => {
         if (this.currentCraftedChar) {
@@ -466,7 +613,6 @@ class HanziBuilder {
       });
     }
 
-    // Output Slot: Click = Fuse & Harvest directly onto Canvas!
     if (this.outputSlot) {
       this.outputSlot.addEventListener('click', () => {
         if (this.currentCraftedChar) {
@@ -475,17 +621,16 @@ class HanziBuilder {
         }
       });
 
-      // Output Slot: Right Click = Put crafted character directly onto Canvas!
       this.outputSlot.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (this.currentCraftedChar) {
           const ch = this.currentCraftedChar;
-          this.clearCanvas();
+          this.clearCanvas(true);
           this.addTokenToCanvas(ch.character, ch.sino_vietnamese || ch.meaning, ch.pinyin, 50, 50);
           this.renderDetailResult(ch);
-          window.soundEngine.playTap();
-          window.showToast(`Đã đặt chữ「${ch.character}」lên khung ghép!`, 'success');
+          window.soundEngine?.playTap();
+          window.showToast && window.showToast(`Đã đặt chữ「${ch.character}」lên khung ghép!`, 'success');
         }
       });
     }
@@ -498,21 +643,20 @@ class HanziBuilder {
 
     const q = normalizeSearchText(rawQuery);
     const placedParts = this.canvasTokens.map(t => t.radical);
-    // Pre-compute compatible set ONCE (O(1) lookup via Inverted Index):
-    const compatible = (this.currentStrokeFilter === 'synergy' || placedParts.length > 0) && window.getCompatibleParts 
-      ? window.getCompatibleParts(placedParts) 
+    const compatible = (this.currentStrokeFilter === 'synergy' || placedParts.length > 0) && window.getCompatibleParts
+      ? window.getCompatibleParts(placedParts)
       : new Set();
 
-    // 1. Filter by Stroke / Category
     let list = this.radicalsData.filter(r => {
-      // Synergy Tab Filter (Filter radicals that can combine with canvas tokens)
       if (this.currentStrokeFilter === 'synergy') {
-        // Fallback: If canvas is empty, show all radicals
         if (placedParts.length === 0) return true;
         return compatible.has(r.character);
       }
 
-      // Crafted Tab Filter
+      if (this.currentStrokeFilter === 'demo') {
+        return r.is_demo === true;
+      }
+
       if (this.currentStrokeFilter === 'crafted') {
         return r.is_crafted === true;
       }
@@ -531,7 +675,6 @@ class HanziBuilder {
       return true;
     });
 
-    // 2. 4-in-1 Smart Search: Hanzi, Pinyin (tone/no tone), Sino-Vietnamese, Meaning
     if (q) {
       list = list.filter(r => {
         const hz = r.character || '';
@@ -543,7 +686,6 @@ class HanziBuilder {
       });
     }
 
-    // Sort: Pinned crafted ingredients first, then by stroke count
     list.sort((a, b) => {
       if (a.is_crafted && !b.is_crafted) return -1;
       if (!a.is_crafted && b.is_crafted) return 1;
@@ -589,16 +731,15 @@ class HanziBuilder {
       chip.draggable = true;
       chip.dataset.radical = displayChar;
       const strokesText = r.stroke_count ? ` (${r.stroke_count} nét)` : '';
-      chip.title = `${r.name || displayChar} [${r.pinyin || ''}]${strokesText} — ${r.meaning || ''}\n• Bấm hoặc Kéo lên khung\n• Chuột phải để nhân bản`;
+      chip.title = `${r.name || displayChar} [${r.pinyin || ''}]${strokesText} — ${r.meaning || ''}\n• Bấm hoặc Kéo lên khung\n• Nhấp đúp để xem chi tiết`;
 
       chip.innerHTML = `
         <span class="chip-glyph">${displayChar}</span>
         <span class="chip-label">${r.name || displayChar}</span>
       `;
 
-      // Drag start from palette
       chip.addEventListener('dragstart', (e) => {
-        window.soundEngine.playTap();
+        window.soundEngine?.playTap();
         this.draggedCanvasToken = null;
         e.dataTransfer.setData('text/plain', JSON.stringify({
           source: 'palette',
@@ -615,12 +756,10 @@ class HanziBuilder {
         chip.classList.remove('dragging');
       });
 
-      // Left click to quick-place
       chip.addEventListener('click', () => {
         this.quickPlaceFromPalette(r);
       });
 
-      // Double-click to inspect radical stroke animation & details
       chip.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         if (window.openVocabModal) window.openVocabModal(r.character);
@@ -634,11 +773,11 @@ class HanziBuilder {
 
   quickPlaceFromPalette(radObj) {
     if (this.canvasTokens.length >= 3) {
-      window.showToast('Tối đa 3 bộ thủ trên khung!', 'warning');
+      window.showToast && window.showToast('Tối đa 3 bộ thủ trên khung!', 'warning');
       return;
     }
 
-    window.soundEngine.playTap();
+    window.soundEngine?.playTap();
 
     let defaultX = 50;
     let defaultY = 50;
@@ -686,15 +825,16 @@ class HanziBuilder {
 
       if (data.source === 'palette') {
         if (this.canvasTokens.length >= 3) {
-          window.showToast('Tối đa 3 bộ thủ trên khung.', 'warning');
+          window.showToast && window.showToast('Tối đa 3 bộ thủ trên khung.', 'warning');
           return;
         }
-        window.soundEngine.playTap();
+        window.soundEngine?.playTap();
         this.addTokenToCanvas(data.radical, data.name, data.pinyin, xPct, yPct);
       } else if (data.source === 'canvas_token') {
         const token = this.canvasTokens.find(t => t.id === data.id);
         if (token) {
-          window.soundEngine.playTap();
+          this.pushUndoSnapshot();
+          window.soundEngine?.playTap();
           token.x = xPct;
           token.y = yPct;
           this.updateTokenElementPosition(token);
@@ -709,7 +849,10 @@ class HanziBuilder {
 
   // ── Token Management on Canvas ──────────────────────────────────────────────
 
-  addTokenToCanvas(radical, name, pinyin, x, y) {
+  addTokenToCanvas(radical, name, pinyin, x, y, recordUndo = true) {
+    if (recordUndo) {
+      this.pushUndoSnapshot();
+    }
     const tokenId = `token_${++this.tokenIdCounter}`;
     const tokenObj = { id: tokenId, radical, name, pinyin, x, y };
 
@@ -734,13 +877,11 @@ class HanziBuilder {
       <button class="token-remove-btn" title="Xóa bộ thủ này">×</button>
     `;
 
-    // Remove token event
     el.querySelector('.token-remove-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       this.removeToken(tokenObj.id);
     });
 
-    // Single Click: Inspect token details & pronounce
     el.addEventListener('click', (e) => {
       if (e.target.closest('.token-remove-btn')) return;
       window.soundEngine?.playTap();
@@ -760,32 +901,28 @@ class HanziBuilder {
       this.renderDetailResult(charObj);
     });
 
-    // Double Click: Open full dictionary & writing modal
     el.addEventListener('dblclick', (e) => {
       e.stopPropagation();
       if (window.openVocabModal) window.openVocabModal(tokenObj.radical);
     });
 
-    // Right-Click: Clone / Duplicate token nearby!
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
       if (this.canvasTokens.length >= 3) {
-        window.showToast('Tối đa 3 bộ thủ trên khung!', 'warning');
+        window.showToast && window.showToast('Tối đa 3 bộ thủ trên khung!', 'warning');
         return;
       }
 
-      window.soundEngine.playTap();
-      // Place clone slightly offset
+      window.soundEngine?.playTap();
       let newX = tokenObj.x > 50 ? tokenObj.x - 18 : tokenObj.x + 18;
       let newY = tokenObj.y > 50 ? tokenObj.y - 14 : tokenObj.y + 14;
 
       this.addTokenToCanvas(tokenObj.radical, tokenObj.name, tokenObj.pinyin, newX, newY);
-      window.showToast(`Đã sao chép bộ [ ${tokenObj.radical} ]`, 'info');
+      window.showToast && window.showToast(`Đã sao chép bộ [ ${tokenObj.radical} ]`, 'info');
     });
 
-    // Drag to reposition token OR drag outside to discard
     el.addEventListener('dragstart', (e) => {
       this.draggedCanvasToken = tokenObj;
       e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -805,9 +942,41 @@ class HanziBuilder {
       );
       if (!isInside && this.draggedCanvasToken) {
         this.removeToken(tokenObj.id);
-        window.showToast(`Đã loại bỏ [ ${tokenObj.radical} ]`, 'info');
+        window.showToast && window.showToast(`Đã loại bỏ [ ${tokenObj.radical} ]`, 'info');
       }
       this.draggedCanvasToken = null;
+    });
+
+    // Touch drag support for mobile / tablet screens
+    let touchMoved = false;
+    el.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.token-remove-btn')) return;
+      touchMoved = false;
+      this.pushUndoSnapshot();
+      el.classList.add('moving');
+    }, { passive: true });
+
+    el.addEventListener('touchmove', (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      e.preventDefault();
+      touchMoved = true;
+      const touch = e.touches[0];
+      const rect = this.canvasBoard.getBoundingClientRect();
+      const xPct = Math.max(12, Math.min(88, ((touch.clientX - rect.left) / rect.width) * 100));
+      const yPct = Math.max(12, Math.min(88, ((touch.clientY - rect.top) / rect.height) * 100));
+      tokenObj.x = xPct;
+      tokenObj.y = yPct;
+      this.updateTokenElementPosition(tokenObj);
+    }, { passive: false });
+
+    el.addEventListener('touchend', () => {
+      el.classList.remove('moving');
+      if (touchMoved) {
+        this.onCanvasStateChanged();
+      } else {
+        this.undoStack.pop();
+        this.updateUndoButtonState();
+      }
     });
 
     tokenObj.el = el;
@@ -821,8 +990,11 @@ class HanziBuilder {
     }
   }
 
-  removeToken(tokenId) {
-    window.soundEngine.playTap();
+  removeToken(tokenId, recordUndo = true) {
+    if (recordUndo && this.canvasTokens.length > 0) {
+      this.pushUndoSnapshot();
+    }
+    window.soundEngine?.playTap();
     const idx = this.canvasTokens.findIndex(t => t.id === tokenId);
     if (idx !== -1) {
       const token = this.canvasTokens[idx];
@@ -835,8 +1007,11 @@ class HanziBuilder {
     this.onCanvasStateChanged();
   }
 
-  clearCanvas() {
-    window.soundEngine.playTap();
+  clearCanvas(recordUndo = false) {
+    if (recordUndo && this.canvasTokens.length > 0) {
+      this.pushUndoSnapshot();
+    }
+    window.soundEngine?.playTap();
     this.canvasTokens.forEach(t => { if (t.el) t.el.remove(); });
     this.canvasTokens = [];
     this.currentCraftedChar = null;
@@ -852,7 +1027,6 @@ class HanziBuilder {
   onCanvasStateChanged() {
     if (this.suggestionAlert) this.suggestionAlert.style.display = 'none';
 
-    // Toggle empty prompt
     if (this.emptyPrompt) {
       this.emptyPrompt.style.display = this.canvasTokens.length === 0 ? 'flex' : 'none';
     }
@@ -862,7 +1036,7 @@ class HanziBuilder {
       if (this.layoutTag) this.layoutTag.style.display = 'none';
       this.updateOutputSlot(null);
       this.lastNotifiedCraftId = null;
-      this.updateSynergyHighlight([]); // Clear highlights
+      this.updateSynergyHighlight([]);
       return;
     }
 
@@ -876,11 +1050,10 @@ class HanziBuilder {
       if (this.layoutTag) this.layoutTag.style.display = 'none';
       this.updateOutputSlot(null);
       this.lastNotifiedCraftId = null;
-      this.updateSynergyHighlight(placedParts); // Highlight compatible partners
+      this.updateSynergyHighlight(placedParts);
       return;
     }
 
-    // Analyze spatial geometry
     const analysis = SpatialGeometry.analyze(this.canvasTokens);
 
     if (this.statusText) {
@@ -892,31 +1065,26 @@ class HanziBuilder {
       this.layoutTag.textContent = analysis.layoutName;
     }
 
-    // Live Recipe Matching
     const matchedChar = this.findMatchingCharacter(analysis);
 
     if (matchedChar) {
-      // Direct Match! Show in Minecraft output slot immediately & Auto-claim to Inventory!
       this.onCraftingMatched(matchedChar, analysis);
-      this.updateSynergyHighlight([]); // Match found — no more hints needed
+      this.updateSynergyHighlight([]);
       return;
     }
 
-    // Check Reverse/Flipped Placement
     const reversedChar = this.findReversedCharacter();
     if (reversedChar) {
       this.onCraftingReversed(reversedChar);
       this.updateOutputSlot(null);
       this.lastNotifiedCraftId = null;
-      this.updateSynergyHighlight([]); // Clear on reverse hint
+      this.updateSynergyHighlight([]);
       return;
     }
 
-    // No Match yet — still show synergy for current placed parts
     const placedParts = this.canvasTokens.map(t => t.radical);
     this.updateSynergyHighlight(placedParts);
 
-    // Smart Live Hint for Near-Complete Recipes (e.g. 2 of 3 tokens placed, like 川 = 丿+丨+丨)
     const hints = window.getNearCompleteHints ? window.getNearCompleteHints(placedParts) : [];
     if (hints && hints.length > 0) {
       const h = hints[0];
@@ -929,18 +1097,15 @@ class HanziBuilder {
       }
     }
 
-    // No Match
     this.updateOutputSlot(null);
     this.lastNotifiedCraftId = null;
     this.resetTokenStyles();
   }
 
   // ── Smart Synergy Highlight ───────────────────────────────────────────────
-  // Glows compatible palette chips when tokens are on the canvas.
   updateSynergyHighlight(placedParts) {
     const compatible = window.getCompatibleParts ? window.getCompatibleParts(placedParts) : new Set();
 
-    // Update synergy tab badge if present
     const synergyTabBtn = document.getElementById('tab-synergy-filter');
     if (synergyTabBtn) {
       if (placedParts.length > 0 && compatible.size > 0) {
@@ -950,7 +1115,6 @@ class HanziBuilder {
       }
     }
 
-    // If currently on synergy tab, dynamically re-render the palette to reflect current canvas state
     if (this.currentStrokeFilter === 'synergy') {
       this.renderPalette(this.paletteSearch ? this.paletteSearch.value.trim() : '');
       return;
@@ -972,11 +1136,9 @@ class HanziBuilder {
     });
   }
 
-
   findMatchingCharacter(analysis) {
     if (!analysis || !analysis.layout || !analysis.roles || analysis.roles.length === 0) return null;
 
-    // 0. Direct Match from Recipe-Aware Analyzer
     if (analysis.matchedCandidate) {
       const match = analysis.matchedCandidate;
       const charInfo = (window.CHARACTERS_DB && window.CHARACTERS_DB[match.character]) || {};
@@ -1002,13 +1164,10 @@ class HanziBuilder {
       };
     }
 
-    // 1. Try O(1) Spatial Recipe Hash Map (Over 8,660+ Unicode IDS recipes)
-    const recipesMap = window.CRAFTING_RECIPES_MAP;
     const parts = analysis.roles.map(r => r.token.radical);
-    const hashKey = `${analysis.layout}:${parts.join('+')}`;
-
-    if (recipesMap && recipesMap[hashKey]) {
-      const match = recipesMap[hashKey];
+    const res = SpatialGeometry.findRecipeWithAllographs(analysis.layout, parts);
+    if (res && res.match) {
+      const match = res.match;
       const charInfo = (window.CHARACTERS_DB && window.CHARACTERS_DB[match.character]) || {};
 
       return {
@@ -1016,7 +1175,7 @@ class HanziBuilder {
         character: match.character,
         pinyin: match.pinyin || charInfo.pinyin || '',
         meaning: match.meaning || charInfo.meaning || '',
-        sino_vietnamese: charInfo.sino_vietnamese || '',
+        sino_vietnamese: charInfo.sino_vietnamese || match.sino_vietnamese || '',
         hsk_level: charInfo.hsk || 1,
         layout: match.layout,
         layout_name: match.layout_name,
@@ -1031,7 +1190,6 @@ class HanziBuilder {
       };
     }
 
-    // 2. Fallback to Curated HANZI_DATA list
     return this.characters.find(ch => {
       if (ch.layout !== analysis.layout) return false;
       if (ch.components.length !== analysis.roles.length) return false;
@@ -1048,43 +1206,41 @@ class HanziBuilder {
   findReversedCharacter() {
     if (this.canvasTokens.length !== 2) return null;
     const [t1, t2] = this.canvasTokens;
-    const recipesMap = window.CRAFTING_RECIPES_MAP;
 
-    if (recipesMap) {
-      const possibleLayouts = [
-        'LEFT_RIGHT', 'TOP_BOTTOM', 'SURROUND', 'SURROUND_TOP',
-        'SURROUND_TOPLEFT', 'SURROUND_BOTTOMLEFT', 'SURROUND_TOPRIGHT',
-        'SURROUND_BOTTOM', 'SURROUND_LEFT'
-      ];
+    const possibleLayouts = [
+      'LEFT_RIGHT', 'TOP_BOTTOM', 'SURROUND', 'SURROUND_TOP',
+      'SURROUND_TOPLEFT', 'SURROUND_BOTTOMLEFT', 'SURROUND_TOPRIGHT',
+      'SURROUND_BOTTOM', 'SURROUND_LEFT'
+    ];
 
-      for (const layout of possibleLayouts) {
-        const revKey1 = `${layout}:${t2.radical}+${t1.radical}`;
-        const revKey2 = `${layout}:${t1.radical}+${t2.radical}`;
-
-        if (recipesMap[revKey1]) {
-          const match = recipesMap[revKey1];
-          return {
-            character: match.character,
-            meaning: match.meaning,
-            layout: match.layout,
-            components: [
-              { radical: t2.radical, position: 'FIRST' },
-              { radical: t1.radical, position: 'SECOND' }
-            ]
-          };
-        }
-        if (recipesMap[revKey2]) {
-          const match = recipesMap[revKey2];
-          return {
-            character: match.character,
-            meaning: match.meaning,
-            layout: match.layout,
-            components: [
-              { radical: t1.radical, position: 'FIRST' },
-              { radical: t2.radical, position: 'SECOND' }
-            ]
-          };
-        }
+    for (const layout of possibleLayouts) {
+      const rev1 = SpatialGeometry.findRecipeWithAllographs(layout, [t2.radical, t1.radical]);
+      if (rev1) {
+        const match = rev1.match;
+        return {
+          character: match.character,
+          sino_vietnamese: match.sino_vietnamese,
+          meaning: match.meaning,
+          layout: match.layout,
+          components: [
+            { radical: t2.radical, position: 'FIRST' },
+            { radical: t1.radical, position: 'SECOND' }
+          ]
+        };
+      }
+      const rev2 = SpatialGeometry.findRecipeWithAllographs(layout, [t1.radical, t2.radical]);
+      if (rev2) {
+        const match = rev2.match;
+        return {
+          character: match.character,
+          sino_vietnamese: match.sino_vietnamese,
+          meaning: match.meaning,
+          layout: match.layout,
+          components: [
+            { radical: t1.radical, position: 'FIRST' },
+            { radical: t2.radical, position: 'SECOND' }
+          ]
+        };
       }
     }
 
@@ -1099,32 +1255,22 @@ class HanziBuilder {
   onCraftingMatched(charObj, analysis) {
     this.currentCraftedChar = charObj;
 
-    // 1. Magnetic snap components into clean distinct positions (NO full overlap!)
     this.magneticSnapTokens(charObj, analysis);
-
-    // 2. Light up Minecraft Crafting Arrow & Output Slot
     this.updateOutputSlot(charObj);
-
-    // 3. Render Details
     this.renderDetailResult(charObj);
-
-    // 4. Auto-claim into Inventory immediately (no extra manual click required!)
     this.autoClaimToInventory(charObj);
 
-    // 5. Toast notification & Pronounce (deduplicated)
     if (this.lastNotifiedCraftId !== charObj.id) {
       this.lastNotifiedCraftId = charObj.id;
-      window.soundEngine.playSuccess();
-      window.soundEngine.speakChinese(charObj.character);
-      window.showToast(`✨ Chế tác thành công chữ「${charObj.character}」! (Đã tự thu nạp vào Kho)`, 'success');
+      window.soundEngine?.playSuccess();
+      window.soundEngine?.speakChinese(charObj.character);
+      window.showToast && window.showToast(`✨ Chế tác thành công chữ「${charObj.character}」! (Đã tự thu nạp vào Kho)`, 'success');
     }
   }
 
   autoClaimToInventory(ch) {
-    // Record in session discoveries & game state
     this.recordDiscovery(ch);
 
-    // Auto-add newly crafted character to inventory as a composite component!
     const alreadyInPalette = this.radicalsData.some(r => r.character === ch.character);
     if (!alreadyInPalette) {
       this.radicalsData.unshift({
@@ -1159,12 +1305,9 @@ class HanziBuilder {
     }
   }
 
-  // ── Visual Crafting Feedback (Maintains 100% Free Movement Without Snapping) ──
-
   magneticSnapTokens(charObj, analysis) {
     this.resetTokenStyles();
 
-    // Preserve 100% user dragged positions without any snapping
     this.canvasTokens.forEach(t => {
       if (t.el) {
         t.el.classList.add('token-bonding-glow');
@@ -1207,20 +1350,20 @@ class HanziBuilder {
   claimCraftedCharacter() {
     if (!this.currentCraftedChar) return;
     const ch = this.currentCraftedChar;
-    window.soundEngine.playSuccess();
+    window.soundEngine?.playSuccess();
 
-    // Play Fusion Morph Animation on Crafting Board & Spawn the newly crafted character token
     this.playFusionMorphAnimation(ch, () => {
-      this.clearCanvas();
+      this.clearCanvas(false);
       this.addTokenToCanvas(
         ch.character,
         ch.sino_vietnamese || ch.meaning,
         ch.pinyin,
         50,
-        50
+        50,
+        false
       );
-      window.soundEngine.speakChinese(ch.character);
-      window.showToast(`✨ Đã hợp nhất thành công chữ「${ch.character}」trên khung!`, 'success');
+      window.soundEngine?.speakChinese(ch.character);
+      window.showToast && window.showToast(`✨ Đã hợp nhất thành công chữ「${ch.character}」trên khung!`, 'success');
     });
   }
 
@@ -1230,14 +1373,12 @@ class HanziBuilder {
       return;
     }
 
-    // Animate all tokens sliding into the center (50%, 50%) and collapsing
     this.canvasTokens.forEach(t => {
       t.x = 50; t.y = 50;
       this.updateTokenElementPosition(t);
       if (t.el) t.el.classList.add('fusing-collapse');
     });
 
-    // Create a golden fusion burst element in the center
     const burst = document.createElement('div');
     burst.className = 'fusion-center-burst';
     burst.innerHTML = `<span class="fused-glyph-pop">${ch.character}</span>`;
@@ -1270,14 +1411,13 @@ class HanziBuilder {
   }
 
   flipCanvasPositions() {
-    window.soundEngine.playTap();
+    window.soundEngine?.playTap();
     if (this.canvasTokens.length === 2 && this.lastReversedChar) {
+      this.pushUndoSnapshot();
       const targetChar = this.lastReversedChar;
       const [t1, t2] = this.canvasTokens;
 
       const comp1 = targetChar.components[0];
-      const comp2 = targetChar.components[1];
-
       const tokenForComp1 = this.canvasTokens.find(t => t.radical.normalize() === comp1.radical.normalize());
       const tokenForComp2 = this.canvasTokens.find(t => t.id !== tokenForComp1?.id);
 
@@ -1338,10 +1478,8 @@ class HanziBuilder {
       const hasValidSino = window.isValidSinoVietnamese ? window.isValidSinoVietnamese(rawSino, displayChar) : (rawSino && rawSino !== displayChar && !/[^\u0000-\u007F\u00C0-\u1EF9\s]/.test(rawSino));
       const sino = hasValidSino ? rawSino : '';
 
-      // 1. Accurate HSK Level Info
       const hskInfo = window.getHskInfo ? window.getHskInfo(displayChar) : { levelText: 'Hán Tự', badgeClass: 'hsk-ancient' };
 
-      // 2. Authoritative or Smart 2-Tier Etymology Story
       const mnemonicText = window.getEtymologyStory
         ? window.getEtymologyStory(ch, ch.components, charData)
         : (ch.mnemonic || `Chữ「${displayChar}」tạo bởi các bộ phận cấu thành.`);
@@ -1350,7 +1488,6 @@ class HanziBuilder {
         ? `<span class="detail-variant-pill" style="background:rgba(255,255,255,0.06);border:1px solid var(--border-color);color:var(--text-dim);padding:0.2rem 0.6rem;border-radius:var(--radius-full);font-size:0.78rem;">${scriptMode === 'traditional' ? `Giản thể: <b style="color:#fff;">${pair.simplified}</b>` : `Phồn thể: <b style="color:#fff;">${pair.traditional}</b>`}</span>`
         : '';
 
-      // 3. Deduplicate & Clean Stacked 2-Tier Compound Cards
       const seenWords = new Set();
       const cleanCompounds = [];
       (compounds || []).forEach(cp => {
@@ -1436,7 +1573,7 @@ class HanziBuilder {
                   <div class="comp-tag-card" style="cursor:pointer;" title="Bấm để phát âm và tra cứu bộ ${c.radical}" data-rad="${c.radical}">
                     <span class="ctc-glyph">${c.radical}</span>
                     <div class="ctc-text">
-                      <b>Bộ ${c.name} (${c.pinyin || ''})</b>
+                      <b>Bộ ${c.name || c.radical} ${c.pinyin ? `(${c.pinyin})` : ''}</b>
                       <small>${posName ? `${posName}` : (c.meaning || c.radical)}</small>
                     </div>
                   </div>
@@ -1451,7 +1588,7 @@ class HanziBuilder {
             const tatoebaList = window.getSentencesForCharacter ? window.getSentencesForCharacter(displayChar) : [];
             const sentences = (tatoebaList && tatoebaList.length > 0)
               ? tatoebaList
-              : (ch.example_sentence ? [{ zh: ch.example_sentence, vi: ch.example_translation || '???' }] : []);
+              : (ch.example_sentence ? [{ zh: ch.example_sentence, vi: ch.example_translation || '' }] : []);
             if (sentences.length === 0) return '';
             return `
               <div style="margin-top:0.9rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.07);">
@@ -1461,15 +1598,15 @@ class HanziBuilder {
                 </div>
                 <div class="forge-sentences-scroll" style="display:flex;flex-direction:column;gap:0.45rem;max-height:165px;overflow-y:auto;overscroll-behavior:contain;contain:content;-webkit-overflow-scrolling:touch;padding-right:4px;">
                   ${sentences.map((s, idx) => {
-                    const hasVi = s.vi && s.vi !== '???';
                     return `
                       <div class="forge-sentence-card" data-sentence="${s.zh}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;cursor:pointer;transition:all 0.15s ease;" title="Bấm để nghe phát âm câu này">
                         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;">
                           <span style="font-family:var(--font-hanzi);font-size:0.98rem;color:#fff;font-weight:600;line-height:1.4;">${idx + 1}. ${s.zh}</span>
                           <span style="font-size:0.72rem;color:var(--text-dim);flex-shrink:0;">🔊</span>
                         </div>
-                        <div style="font-size:0.82rem;color:${hasVi ? '#cbd5e1' : 'var(--text-dim)'};margin-top:0.2rem;line-height:1.35;${hasVi ? '' : 'font-style:italic;'}">
-                          ${hasVi ? s.vi : 'Dịch nghĩa: Chưa có bản dịch tiếng Việt (???)'}
+                        ${s.py ? `<div style="font-size:0.77rem;color:var(--gold-light);opacity:0.85;margin-top:0.15rem;">${s.py}</div>` : ''}
+                        <div style="font-size:0.82rem;color:#cbd5e1;margin-top:0.15rem;line-height:1.35;">
+                          ${s.vi}
                         </div>
                       </div>
                     `;
@@ -1481,7 +1618,6 @@ class HanziBuilder {
         </div>
       `;
 
-      // Event listeners
       document.getElementById('btn-detail-speak')?.addEventListener('click', () => {
         window.soundEngine?.speakChinese(displayChar);
       });
@@ -1490,7 +1626,6 @@ class HanziBuilder {
         if (window.openVocabModal) window.openVocabModal(displayChar);
       });
 
-      // Sub-components click handler
       this.detailResultBox.querySelectorAll('.comp-tag-card').forEach(tag => {
         tag.addEventListener('click', () => {
           const rad = tag.dataset.rad;
@@ -1502,7 +1637,6 @@ class HanziBuilder {
         });
       });
 
-      // Sentence cards audio click handler
       this.detailResultBox.querySelectorAll('.forge-sentence-card').forEach(card => {
         card.addEventListener('click', () => {
           const sent = card.dataset.sentence;
@@ -1513,7 +1647,6 @@ class HanziBuilder {
         });
       });
 
-      // Compounds click handler
       this.detailResultBox.querySelectorAll('.forge-compound-card').forEach(card => {
         card.addEventListener('click', () => {
           const w = card.dataset.word;
@@ -1523,7 +1656,7 @@ class HanziBuilder {
           }
         });
       });
-    } catch(err) {
+    } catch (err) {
       console.warn("renderDetailResult error:", err);
     }
   }
@@ -1578,8 +1711,8 @@ class HanziBuilder {
       item.innerHTML = `
         <span class="hfi-glyph">${ch.character}</span>
         <div class="hfi-meta">
-          <span class="hfi-pinyin">${ch.pinyin}</span>
-          <span class="hfi-meaning">${ch.meaning}</span>
+          <span class="hfi-pinyin">${ch.pinyin || ''}</span>
+          <span class="hfi-meaning">${ch.meaning || ''}</span>
           <span class="hfi-comps">${ch.components ? ch.components.map(c => c.radical).join(' + ') : ''}</span>
         </div>
       `;
@@ -1587,7 +1720,7 @@ class HanziBuilder {
         if (window.openVocabModal) {
           window.openVocabModal(ch.character);
         } else {
-          window.soundEngine.speakChinese(ch.character);
+          window.soundEngine?.speakChinese(ch.character);
         }
       });
       this.historyFeed.appendChild(item);
@@ -1622,7 +1755,6 @@ class HanziBuilder {
       });
     }
 
-    // Event Delegation on Codex Grid for high performance (0 listener per card)
     if (this.codexGrid) {
       this.codexGrid.addEventListener('click', (e) => {
         const loadBtn = e.target.closest('.btn-load-recipe');
@@ -1658,11 +1790,10 @@ class HanziBuilder {
         const speakBtn = e.target.closest('.btn-speak-recipe');
         if (speakBtn) {
           const char = speakBtn.dataset.char;
-          if (char) window.soundEngine.speakChinese(char);
+          if (char) window.soundEngine?.speakChinese(char);
         }
       });
 
-      // Infinite scroll listener
       this.codexGrid.addEventListener('scroll', () => {
         if (this.codexGrid.scrollTop + this.codexGrid.clientHeight >= this.codexGrid.scrollHeight - 250) {
           this.renderMoreCodexCards(24);
@@ -1675,7 +1806,7 @@ class HanziBuilder {
         document.querySelectorAll('.codex-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.codexActiveTab = btn.dataset.tab || 'all';
-        window.soundEngine.playTap();
+        window.soundEngine?.playTap();
         this.renderCodexGrid();
       });
     });
@@ -1683,7 +1814,7 @@ class HanziBuilder {
 
   openCodex(filterRadical = null) {
     if (!this.codexModal) return;
-    window.soundEngine.playTap();
+    window.soundEngine?.playTap();
     this.codexModal.classList.add('active');
 
     if (filterRadical && this.codexSearchInput) {
@@ -1696,7 +1827,7 @@ class HanziBuilder {
 
   closeCodex() {
     if (!this.codexModal) return;
-    window.soundEngine.playTap();
+    window.soundEngine?.playTap();
     this.codexModal.classList.remove('active');
   }
 
@@ -1721,26 +1852,24 @@ class HanziBuilder {
       const isUnlocked = this.isCharacterUnlocked(rec.character);
       if (isUnlocked) unlockedCount++;
 
-      // Tab filter
       if (this.codexActiveTab === 'unlocked' && !isUnlocked) return false;
       if (this.codexActiveTab === 'locked' && isUnlocked) return false;
 
-      // Search filter
       if (q) {
         const partsText = (rec.parts || []).join('');
         const charText = rec.character || '';
+        const svText = normalizeSearchText(rec.sino_vietnamese || '');
         const pyText = normalizeSearchText(rec.pinyin || '');
         const mnText = normalizeSearchText(rec.meaning || '');
         const lnText = normalizeSearchText(rec.layout_name || '');
 
-        const match = charText.includes(q) || partsText.includes(q) || pyText.includes(q) || mnText.includes(q) || lnText.includes(q);
+        const match = charText.includes(q) || partsText.includes(q) || svText.includes(q) || pyText.includes(q) || mnText.includes(q) || lnText.includes(q);
         if (!match) return false;
       }
 
       return true;
     });
 
-    // Update Codex header stats
     if (this.codexStatTotal) this.codexStatTotal.textContent = totalCount.toLocaleString();
     if (this.codexStatUnlocked) this.codexStatUnlocked.textContent = unlockedCount.toLocaleString();
     if (this.codexStatPercent) {
@@ -1830,39 +1959,62 @@ class HanziBuilder {
 
   loadRecipeOntoBoard(rec) {
     if (!rec || !rec.parts) return;
-    this.clearCanvas();
+    this.clearCanvas(true);
 
     const parts = rec.parts;
+    const radLookup = (ch) => {
+      const r = (window.RADICALS_DATA || []).find(x => x.character === ch);
+      return { name: r ? r.name : ch, pinyin: r ? r.pinyin : '' };
+    };
+
     if (parts.length === 2) {
+      const i0 = radLookup(parts[0]);
+      const i1 = radLookup(parts[1]);
       if (rec.layout === 'LEFT_RIGHT') {
-        this.addTokenToCanvas(parts[0], parts[0], '', 28, 50);
-        this.addTokenToCanvas(parts[1], parts[1], '', 72, 50);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 28, 50, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 72, 50, false);
       } else if (rec.layout === 'TOP_BOTTOM') {
-        this.addTokenToCanvas(parts[0], parts[0], '', 50, 28);
-        this.addTokenToCanvas(parts[1], parts[1], '', 50, 72);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 50, 28, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 50, 72, false);
       } else if (rec.layout === 'SURROUND_BOTTOMLEFT') {
-        this.addTokenToCanvas(parts[0], parts[0], '', 34, 62);
-        this.addTokenToCanvas(parts[1], parts[1], '', 62, 36);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 34, 62, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 62, 36, false);
       } else if (rec.layout === 'SURROUND_TOPRIGHT') {
-        this.addTokenToCanvas(parts[0], parts[0], '', 64, 36);
-        this.addTokenToCanvas(parts[1], parts[1], '', 38, 62);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 64, 36, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 38, 62, false);
+      } else if (rec.layout === 'SURROUND_TOP') {
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 50, 42, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 50, 58, false);
+      } else if (rec.layout === 'SURROUND_BOTTOM') {
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 50, 62, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 50, 42, false);
+      } else if (rec.layout === 'SURROUND_LEFT') {
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 40, 50, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 60, 50, false);
       } else {
-        this.addTokenToCanvas(parts[0], parts[0], '', 38, 50);
-        this.addTokenToCanvas(parts[1], parts[1], '', 62, 50);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 44, 46, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 56, 54, false);
       }
     } else if (parts.length === 3) {
+      const i0 = radLookup(parts[0]);
+      const i1 = radLookup(parts[1]);
+      const i2 = radLookup(parts[2]);
       if (rec.layout === 'TRIANGLE_PYRAMID') {
-        this.addTokenToCanvas(parts[0], parts[0], '', 50, 26);
-        this.addTokenToCanvas(parts[1], parts[1], '', 28, 70);
-        this.addTokenToCanvas(parts[2], parts[2], '', 72, 70);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 50, 26, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 28, 70, false);
+        this.addTokenToCanvas(parts[2], i2.name, i2.pinyin, 72, 70, false);
+      } else if (rec.layout === 'THREE_PART_V') {
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 50, 22, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 50, 50, false);
+        this.addTokenToCanvas(parts[2], i2.name, i2.pinyin, 50, 78, false);
       } else {
-        this.addTokenToCanvas(parts[0], parts[0], '', 22, 50);
-        this.addTokenToCanvas(parts[1], parts[1], '', 50, 50);
-        this.addTokenToCanvas(parts[2], parts[2], '', 78, 50);
+        this.addTokenToCanvas(parts[0], i0.name, i0.pinyin, 22, 50, false);
+        this.addTokenToCanvas(parts[1], i1.name, i1.pinyin, 50, 50, false);
+        this.addTokenToCanvas(parts[2], i2.name, i2.pinyin, 78, 50, false);
       }
     }
 
-    window.showToast(`Đã nạp công thức tạo chữ「${rec.character}」lên khung!`, 'success');
+    window.showToast && window.showToast(`Đã nạp công thức tạo chữ「${rec.character}」lên khung!`, 'success');
   }
 
   init() {
