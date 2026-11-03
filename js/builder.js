@@ -351,6 +351,7 @@ class HanziBuilder {
 
     // State for placed tokens on canvas: [{ id, radical, name, pinyin, x, y, el }]
     this.canvasTokens = [];
+    this.selectedTokenId = null;
     this.undoStack = [];
     this.tokenIdCounter = 0;
     this.currentCraftedChar = null;
@@ -555,6 +556,12 @@ class HanziBuilder {
         this.hideGhostGuide();
         this.handleCanvasDrop(e);
       });
+
+      this.canvasBoard.addEventListener('click', (e) => {
+        if (!e.target.closest('.canvas-token')) {
+          this.selectToken(null);
+        }
+      });
     }
 
     document.addEventListener('dragover', (e) => {
@@ -585,13 +592,32 @@ class HanziBuilder {
       this.undoBtn.addEventListener('click', () => this.undoLastAction());
     }
 
-    // Keyboard shortcut Ctrl+Z for Undo when on Builder tab
+    // Keyboard shortcuts: Ctrl+Z (Undo) and Delete/Backspace (Remove token)
     document.addEventListener('keydown', (e) => {
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+
+      const builderSec = document.getElementById('section-builder');
+      if (!builderSec || !builderSec.classList.contains('active')) return;
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        const builderSec = document.getElementById('section-builder');
-        if (builderSec && builderSec.classList.contains('active')) {
+        e.preventDefault();
+        this.undoLastAction();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (this.selectedTokenId && this.canvasTokens.some(t => t.id === this.selectedTokenId)) {
           e.preventDefault();
-          this.undoLastAction();
+          const targetTok = this.canvasTokens.find(t => t.id === this.selectedTokenId);
+          const radChar = targetTok ? targetTok.radical : '';
+          this.removeToken(this.selectedTokenId);
+          this.selectedTokenId = null;
+          window.showToast && window.showToast(`Đã xóa bộ [ ${radChar} ] khỏi khung (Phím Delete)`, 'info');
+        } else if (this.canvasTokens.length > 0) {
+          e.preventDefault();
+          const lastToken = this.canvasTokens[this.canvasTokens.length - 1];
+          const radChar = lastToken ? lastToken.radical : '';
+          this.removeToken(lastToken.id);
+          this.selectedTokenId = null;
+          window.showToast && window.showToast(`Đã xóa bộ [ ${radChar} ] khỏi khung (Phím Delete)`, 'info');
         }
       }
     });
@@ -858,7 +884,21 @@ class HanziBuilder {
 
     this.canvasTokens.push(tokenObj);
     this.renderTokenElement(tokenObj);
+    this.selectToken(tokenObj.id);
     this.onCanvasStateChanged();
+  }
+
+  selectToken(tokenId) {
+    this.selectedTokenId = tokenId;
+    this.canvasTokens.forEach(t => {
+      if (t.el) {
+        if (t.id === tokenId) {
+          t.el.classList.add('token-selected');
+        } else {
+          t.el.classList.remove('token-selected');
+        }
+      }
+    });
   }
 
   renderTokenElement(tokenObj) {
@@ -884,6 +924,7 @@ class HanziBuilder {
 
     el.addEventListener('click', (e) => {
       if (e.target.closest('.token-remove-btn')) return;
+      this.selectToken(tokenObj.id);
       window.soundEngine?.playTap();
       window.soundEngine?.speakChinese(tokenObj.radical);
 
@@ -991,6 +1032,9 @@ class HanziBuilder {
   }
 
   removeToken(tokenId, recordUndo = true) {
+    if (this.selectedTokenId === tokenId) {
+      this.selectedTokenId = null;
+    }
     if (recordUndo && this.canvasTokens.length > 0) {
       this.pushUndoSnapshot();
     }
@@ -1008,6 +1052,7 @@ class HanziBuilder {
   }
 
   clearCanvas(recordUndo = false) {
+    this.selectedTokenId = null;
     if (recordUndo && this.canvasTokens.length > 0) {
       this.pushUndoSnapshot();
     }

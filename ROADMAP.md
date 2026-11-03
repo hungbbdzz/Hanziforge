@@ -124,10 +124,11 @@ hanziforge/
 - [x] PWA manifest + installable on desktop
 
 ### Week 13 — 03/11/2026 | Final Prep
-**Planned commit:** `chore: final polish, README update, presentation prep`
-- [x] Update README with all features
-- [x] Final UI polish and bug fixes
-- [x] Demo recording / screenshots
+**Commit:** `release: final UI polish, quick copy utility & week 13 milestone finalize`
+- [x] Copy Hanzi to clipboard utility with toast in vocab inspector
+- [x] Delete / Backspace keyboard shortcut to remove selected token on canvas
+- [x] Update README and ROADMAP with all release features
+- [x] Final UI polish and milestone closure
 
 ---
 

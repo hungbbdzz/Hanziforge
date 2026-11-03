@@ -164,7 +164,7 @@ Hiện tại trong bản demo, bạn có thể thử nghiệm các công thức 
 | **Tuần 10** | 13/10/2026 | **Ch.8: Sách công thức 8.660 chữ** — Bàn ghép 2D đa khối & kiểm thử dữ liệu | `feat: recipe book 8,660 items & 2D canvas` | ✅ Hoàn thành |
 | **Tuần 11** | 20/10/2026 | **Ch.9: Đa phương tiện & Tài liệu** — Web Audio FX, FPS HUD & System Docs | `feat: web audio fx, fps hud & system docs` | ✅ Hoàn thành |
 | **Tuần 12** | 27/10/2026 | **Ch.10: Tối ưu hiệu năng** — Đo kiểm 60-144 FPS HUD & PWA offline | `perf: optimize rendering, add pwa` | ✅ Hoàn thành |
-| **Tuần 13** | 03/11/2026 | **Nghiệm thu cuối kỳ** — Hoàn thiện toàn bộ sản phẩm hoàn chỉnh | `release: finalize hanziforge platform` | ✅ Hoàn thành |
+| **Tuần 13** | 03/11/2026 | **Nghiệm thu cuối kỳ** — Hoàn thiện toàn bộ sản phẩm hoàn chỉnh | `release: final UI polish, quick copy utility & week 13 milestone finalize` | ✅ Hoàn thành |
 
 ---
 

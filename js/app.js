@@ -555,6 +555,24 @@
       };
     }
 
+    const btnCopy = document.getElementById('btn-vocab-copy-char');
+    if (btnCopy) {
+      btnCopy.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(displayChar);
+        } catch (e) {
+          const ta = document.createElement('textarea');
+          ta.value = displayChar;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        if (root.soundEngine) root.soundEngine.playTap();
+        showToast(`📋 Đã sao chép chữ「${displayChar}」vào bộ nhớ tạm!`, 'success');
+      };
+    }
+
     modal.classList.add('active');
   }
 
